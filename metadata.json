@@ -1,0 +1,6 @@
+{
+  "name": "CRM Kanban Lead Manager",
+  "description": "Un tablero Kanban minimalista para la gestión de leads de un CRM integrado con webhooks de n8n.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
