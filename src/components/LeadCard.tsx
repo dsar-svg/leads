@@ -19,7 +19,8 @@ import {
   Edit3,
   FileText,
   CheckCircle2,
-  Lock
+  Lock,
+  Users2
 } from 'lucide-react';
 import { Lead } from '../types';
 
