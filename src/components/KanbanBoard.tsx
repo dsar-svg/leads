@@ -268,6 +268,17 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     localStorage.setItem('crm_kanban_columns', JSON.stringify(newColumns));
   };
 
+  const handleTransferLead = (lead: Lead, newVendedor: string) => {
+    const updatedLeads = leads.map(l => l.id === lead.id ? { ...l, vendedor: newVendedor } : l);
+    setLeads(updatedLeads);
+    localStorage.setItem('crm_leads_data', JSON.stringify(updatedLeads));
+    showToast(`Lead "${lead.nombre}" transferido a ${newVendedor}`, 'success');
+  };
+
+  const vendorList = Array.from(
+    new Set(leads.map(l => (l.vendedor || 'Sin Asignar').trim()).filter(Boolean))
+  );
+
   // Google Sheets Connection States
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -1439,6 +1450,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                         userRole={userRole}
                         onSecondPurchase={handleSecondPurchase}
                         onChangeClosureType={handleChangeClosureType}
+                        onTransfer={handleTransferLead}
+                        vendorList={vendorList}
                       />
                     </div>
                   );

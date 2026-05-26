@@ -19,6 +19,8 @@ interface KanbanColumnProps {
   userRole?: 'ADMIN' | 'VENDEDOR';
   onSecondPurchase?: (lead: Lead) => void;
   onChangeClosureType?: (lead: Lead) => void;
+  onTransfer?: (lead: Lead, newVendedor: string) => void;
+  vendorList?: string[];
 }
 
 export const KanbanColumn: React.FC<KanbanColumnProps> = ({
@@ -31,6 +33,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   userRole,
   onSecondPurchase,
   onChangeClosureType,
+  onTransfer,
+  vendorList,
 }) => {
   const { isOver, setNodeRef } = useDroppable({
     id: column.id,
@@ -89,6 +93,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
               userRole={userRole}
               onSecondPurchase={onSecondPurchase}
               onChangeClosureType={onChangeClosureType}
+              onTransfer={onTransfer}
+              vendorList={vendorList}
             />
           ))
         ) : (

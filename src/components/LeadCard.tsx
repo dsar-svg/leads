@@ -32,6 +32,8 @@ interface LeadCardProps {
   userRole?: 'ADMIN' | 'VENDEDOR';
   onSecondPurchase?: (lead: Lead) => void;
   onChangeClosureType?: (lead: Lead) => void;
+  onTransfer?: (lead: Lead, newVendedor: string) => void;
+  vendorList?: string[];
 }
 
 export const LeadCard: React.FC<LeadCardProps> = ({ 
@@ -42,7 +44,9 @@ export const LeadCard: React.FC<LeadCardProps> = ({
   onCloseLead,
   userRole = 'ADMIN',
   onSecondPurchase,
-  onChangeClosureType
+  onChangeClosureType,
+  onTransfer,
+  vendorList = []
 }) => {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
@@ -294,6 +298,28 @@ export const LeadCard: React.FC<LeadCardProps> = ({
             >
               <Edit3 className="w-3.5 h-3.5" />
             </button>
+            {userRole === 'ADMIN' && onTransfer && (
+              <div className="relative group/transfer">
+                <button
+                  className="p-1 text-zinc-500 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+                  title="Transferir Lead"
+                >
+                  <Users2 className="w-3.5 h-3.5" />
+                </button>
+                <div className="absolute right-0 bottom-full mb-2 bg-white border border-zinc-200 rounded-lg shadow-lg p-2 w-48 opacity-0 group-hover/transfer:opacity-100 transition-opacity pointer-events-none group-hover/transfer:pointer-events-auto z-50">
+                  <p className="text-[10px] font-bold text-zinc-400 uppercase mb-2">Transferir a:</p>
+                  {vendorList.filter(v => v !== lead.vendedor).map(v => (
+                    <button
+                      key={v}
+                      onClick={() => onTransfer(lead, v)}
+                      className="block w-full text-left px-2 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100 rounded-md"
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <button
               onClick={() => onDelete(lead.id)}
               disabled={isUpdating}
