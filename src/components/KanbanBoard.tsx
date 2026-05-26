@@ -254,6 +254,20 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return defaultCols;
   });
 
+  const handleReorderColumn = (id: string, direction: 'up' | 'down') => {
+    const index = columns.findIndex(c => c.id === id);
+    if (index === -1) return;
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === columns.length - 1) return;
+
+    const newColumns = [...columns];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    [newColumns[index], newColumns[targetIndex]] = [newColumns[targetIndex], newColumns[index]];
+    
+    setColumns(newColumns);
+    localStorage.setItem('crm_kanban_columns', JSON.stringify(newColumns));
+  };
+
   // Google Sheets Connection States
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -1958,38 +1972,54 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   🌐 Fases Activas Registradas ({columns.length})
                 </h4>
                 <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
-                  {columns.map((column) => {
-                    const count = leads.filter(l => l.estatus === column.id).length;
-                    const isProtected = column.id === 'NUEVO' || column.id === 'CONTACTADO';
-                    return (
-                      <div key={column.id} className="flex items-center justify-between p-3 bg-white border border-zinc-200 rounded-xl hover:bg-zinc-50 transition-colors">
-                        <div className="flex items-center gap-2">
-                          <span className={`w-2.5 h-2.5 rounded-full ${isProtected ? 'bg-zinc-400' : 'bg-blue-500 animate-pulse'}`} />
-                          <div className="text-xs">
-                            <span className="font-bold text-zinc-850">{column.title}</span>
-                            <span className="text-[10px] text-zinc-400 ml-1.5 uppercase font-mono bg-zinc-100 px-1 py-0.5 rounded">ID: {column.id}</span>
+                    {columns.map((column, index) => {
+                      const count = leads.filter(l => l.estatus === column.id).length;
+                      const isProtected = column.id === 'NUEVO' || column.id === 'CONTACTADO';
+                      return (
+                        <div key={column.id} className="flex items-center justify-between p-3 bg-white border border-zinc-200 rounded-xl hover:bg-zinc-50 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2.5 h-2.5 rounded-full ${isProtected ? 'bg-zinc-400' : 'bg-blue-500 animate-pulse'}`} />
+                            <div className="text-xs">
+                              <span className="font-bold text-zinc-850">{column.title}</span>
+                              <span className="text-[10px] text-zinc-400 ml-1.5 uppercase font-mono bg-zinc-100 px-1 py-0.5 rounded">ID: {column.id}</span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <div className="flex flex-col gap-0.5">
+                              <button
+                                onClick={() => handleReorderColumn(column.id, 'up')}
+                                disabled={index === 0}
+                                className="text-zinc-400 hover:text-zinc-600 cursor-pointer disabled:opacity-30"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 15l7-7 7 7" /></svg>
+                              </button>
+                              <button
+                                onClick={() => handleReorderColumn(column.id, 'down')}
+                                disabled={index === columns.length - 1}
+                                className="text-zinc-400 hover:text-zinc-600 cursor-pointer disabled:opacity-30"
+                              >
+                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" /></svg>
+                              </button>
+                            </div>
+                            <span className="text-[10px] font-bold text-zinc-500 bg-zinc-100/80 px-2 py-0.5 rounded-full">
+                              {count} prospectos
+                            </span>
+                            {isProtected ? (
+                              <span className="text-[9px] text-zinc-400 font-medium bg-zinc-100 border border-zinc-200/50 rounded px-1.5 py-0.5">Fase Base</span>
+                            ) : (
+                              <button
+                                onClick={() => handleRemoveColumn(column.id)}
+                                className="text-red-600 hover:text-red-700 p-1 rounded-md hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-colors cursor-pointer flex items-center gap-0.5"
+                                title="Eliminar fase"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span className="text-[10px] font-bold">Quitar</span>
+                              </button>
+                            )}
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-[10px] font-bold text-zinc-500 bg-zinc-100/80 px-2 py-0.5 rounded-full">
-                            {count} prospectos
-                          </span>
-                          {isProtected ? (
-                            <span className="text-[9px] text-zinc-400 font-medium bg-zinc-100 border border-zinc-200/50 rounded px-1.5 py-0.5">Fase Base</span>
-                          ) : (
-                            <button
-                              onClick={() => handleRemoveColumn(column.id)}
-                              className="text-red-600 hover:text-red-700 p-1 rounded-md hover:bg-rose-50 border border-transparent hover:border-rose-100 transition-colors cursor-pointer flex items-center gap-0.5"
-                              title="Eliminar fase"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span className="text-[10px] font-bold">Quitar</span>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
               </div>
             </div>
