@@ -114,7 +114,7 @@ export const INITIAL_LEADS: Lead[] = [
     rif: 'DE-55443322',
     canalOrigen: 'Directo',
     campana: 'Web Corporativa',
-    vendedor: 'Unassigned',
+    vendedor: 'Sin Asignar',
     notas: 'Venta cerrada. Pago inicial recibido.',
     numFactura: 'FAC-2026-048',
     fechaVenta: '2026-05-19',

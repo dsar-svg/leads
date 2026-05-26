@@ -395,6 +395,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     } catch (error: any) {
       console.error(error);
       setSheetsError(error.message || 'Error al conectar con Google Sheets. Verifica permisos o el ID.');
+      console.log('Loading INITIAL_LEADS');
+      setLeads(INITIAL_LEADS);
     } finally {
       setIsLoadingFromSheets(false);
     }
@@ -1661,7 +1663,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                           {column.title}
                         </span>
                         <span className="text-zinc-500 font-mono">
-                          {amtInCol} leads (${totalEstVal.toLocaleString()})
+                          {amtInCol} leads
                         </span>
                       </div>
                       <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden">
@@ -1822,6 +1824,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    localStorage.setItem('crm_leads_data', JSON.stringify(INITIAL_LEADS));
+                    setLeads(INITIAL_LEADS);
+                  }}
+                  className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 px-3.5 py-1.5 text-xs font-semibold rounded-xl cursor-pointer transition-all"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Cargar Datos Demo
+                </button>
                 {token ? (
                   <div className="flex items-center gap-2 bg-emerald-50/50 border border-emerald-200/50 rounded-xl px-3 py-1.5 text-xs text-emerald-850">
                     <UserCheck className="w-4 h-4 text-emerald-500" />
