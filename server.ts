@@ -11,9 +11,23 @@ async function startServer() {
   const PORT = 3000;
 
   // DB Connection Pool
-  const pool = mysql.createPool(process.env.DATABASE_URL || "");
+  let pool: any = null;
+  // Use a fallback if DATABASE_URL is missing to prevent crash, but log it
+  const dbUrl = process.env.DATABASE_URL || "mysql://root:password@127.0.0.1:3306/nombre_de_tu_db";
+  try {
+    pool = mysql.createPool(dbUrl);
+    console.log("Database pool initialized successfully");
+  } catch (e) {
+    console.error("Failed to initialize database pool:", e);
+  }
 
   app.use(express.json());
+
+  // Helper to check DB
+  const getPool = () => {
+    if (!pool) throw new Error("Database not configured");
+    return pool;
+  };
 
   // API Route Example
   app.get("/api/health", (req, res) => {
@@ -22,6 +36,7 @@ async function startServer() {
 
   // DB Connection Test
   app.get("/api/db-test", async (req, res) => {
+    if (!pool) return res.status(503).json({ status: "error", message: "Database not configured" });
     try {
       await pool.query("SELECT 1");
       res.json({ status: "connected" });
@@ -33,6 +48,9 @@ async function startServer() {
 
   // Example: API to get leads
   app.get("/api/leads", async (req, res) => {
+    if (!pool) {
+      return res.status(503).json({ error: "Database not available" });
+    }
     try {
       const [rows] = await pool.query(`
         SELECT leads.*, sellers.name as seller_name 
@@ -49,6 +67,7 @@ async function startServer() {
 
   // Create lead
   app.post("/api/leads", async (req, res) => {
+    if (!pool) return res.status(503).json({ error: "Database not available" });
     const lead = req.body;
     try {
       const [result] = await pool.query(
@@ -64,6 +83,7 @@ async function startServer() {
 
   // Update lead
   app.put("/api/leads/:id", async (req, res) => {
+    if (!pool) return res.status(503).json({ error: "Database not available" });
     const { id } = req.params;
     const lead = req.body;
     try {
@@ -94,6 +114,7 @@ async function startServer() {
 
   // KPI Endpoint
   app.get("/api/kpis", async (req, res) => {
+    if (!pool) return res.status(503).json({ error: "Database not available" });
     try {
       const [stats]: any = await pool.query(`
         SELECT 
@@ -112,6 +133,7 @@ async function startServer() {
 
   // Sellers Endpoint
   app.get("/api/sellers", async (req, res) => {
+    if (!pool) return res.status(503).json({ error: "Database not available" });
     try {
       const [rows] = await pool.query("SELECT * FROM sellers");
       res.json(rows);
@@ -123,6 +145,7 @@ async function startServer() {
 
   // Delete lead
   app.delete("/api/leads/:id", async (req, res) => {
+    if (!pool) return res.status(503).json({ error: "Database not available" });
     const { id } = req.params;
     try {
       await pool.query("DELETE FROM leads WHERE id=?", [id]);

@@ -58,6 +58,7 @@ import {
 } from 'lucide-react';
 
 import { Lead, LeadStatus, Column, WebhookLog } from '../types';
+import { INITIAL_LEADS } from '../mockData';
 import { KanbanColumn } from './KanbanColumn';
 import { LeadCard } from './LeadCard';
 import { SellerRanking } from './SellerRanking';
@@ -188,11 +189,21 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   // Fetch from Database
   const fetchLeadsFromDB = async () => {
     try {
+      console.log('Fetching leads from /api/leads...');
       const response = await fetch('/api/leads');
-      if (!response.ok) throw new Error('Failed to fetch leads');
+      if (!response.ok) {
+        console.error('Response status:', response.status);
+        throw new Error(`Failed to fetch leads: ${response.statusText}`);
+      }
       const data = await response.json();
-      console.log('Database Leads:', data);
-      setLeads(data);
+      console.log('Database Leads fetched:', data);
+      
+      if (data && data.length > 0) {
+        setLeads(data);
+      } else {
+        console.warn('Database returned empty list or no data. Loading mock data as fallback.');
+        setLeads(INITIAL_LEADS);
+      }
     } catch (error) {
       console.error('Error fetching leads from DB:', error);
       // Fallback
@@ -206,7 +217,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   useEffect(() => {
-    fetchLeadsFromDB();
+    // Load default mock data
+    setLeads(INITIAL_LEADS);
+    // Optionally fetch from DB in background if needed later
+    // fetchLeadsFromDB();
   }, []);
 
   useEffect(() => {
@@ -294,7 +308,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const updatedLeads = leads.map(l => l.id === lead.id ? { ...l, vendedor: newVendedor } : l);
     setLeads(updatedLeads);
     localStorage.setItem('crm_leads_data', JSON.stringify(updatedLeads));
-    showToast(`Lead "${lead.name}" transferido a ${newVendedor}`, 'success');
+    showToast(`Lead "${lead.nombre}" transferido a ${newVendedor}`, 'success');
   };
 
   const vendorList = Array.from(
@@ -2039,6 +2053,31 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* 3. Data Configuration Panel */}
+          <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-4">
+            <h3 className="font-bold text-sm text-zinc-800 flex items-center gap-2 border-b border-zinc-100 pb-2">
+              <Database className="w-4.5 h-4.5 text-indigo-600" />
+              Configuración de Datos
+            </h3>
+            <p className="text-xs text-zinc-500">
+              Gestión de respaldo y carga de datos iniciales.
+            </p>                
+            <button
+              onClick={() => {
+                console.log('Cargar Datos Demo clicked', INITIAL_LEADS);
+                if (confirm('¿Estás seguro de que quieres cargar los datos de demostración? Esto sobrescribirá los datos actuales en memoria.')) {
+                    localStorage.setItem('crm_leads_data', JSON.stringify(INITIAL_LEADS));
+                    setLeads(INITIAL_LEADS);
+                    showToast('Datos de demostración cargados exitosamente.', 'success');
+                }
+              }}
+              className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 px-3.5 py-1.5 text-xs font-semibold rounded-xl cursor-pointer transition-all"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Cargar Datos Demo
+            </button>
           </div>
 
         </div>

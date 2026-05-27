@@ -7,30 +7,29 @@ export type LeadStatus = string;
 
 export interface Lead {
   id: string;
-  name: string;
-  nombre_contacto: string;
+  nombre: string;
+  nombre_contacto?: string;
+  empresa: string;
   rif: string;
   telefono: string;
-  ubicacion_estado: string;
-  ubicacion_detail: string;
-  categoria_interes: string;
-  especialidad_tienda: string;
-  canal_origen: string;
+  ubicacionEstado: string;
+  ubicacionDetalle: string;
+  canalOrigen: string;
   campana: string;
-  seller_id: string;
+  vendedor: string;
+  seller_id?: string;
   seller_name?: string;
-  status: string;
-  whatsapp_link: string;
-  observaciones_vendedor: string;
-  monto_cerrado_usd: number;
-  num_factura: string;
-  fecha_venta: string;
-  created_at: string;
-  updated_at: string;
+  estatus: string;
+  whatsapp_link?: string;
+  notas: string;
+  valorEstimado: number;
+  numFactura: string;
+  fechaVenta: string;
+  categoriaInteres: string;
+  fechaIngreso: string;
   // UI Only / Temporary fields for KanbanBoard
   hasPassedContactado?: boolean;
   motivoCierre?: string;
-  fechaIngreso?: string;
   rowNumber?: number;
   hasSecondPurchase?: boolean;
 }
