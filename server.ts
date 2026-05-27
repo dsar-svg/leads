@@ -157,17 +157,30 @@ async function startServer() {
   });
 
   // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
+  if (process.env.NODE_ENV === "development") {
+    console.log("Running in DEVELOPMENT mode with Vite Middleware");
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
+    console.log("Running in PRODUCTION mode serving static files");
+    
+    // Al compilar, Vite guarda el frontend en 'dist/assets' e 'dist/index.html'
     const distPath = path.join(process.cwd(), 'dist');
-    app.use(express.static(distPath));
+    
+    // 1. Servir archivos estáticos (js, css, imágenes) con máxima prioridad
+    app.use(express.static(distPath, { index: false }));
+    
+    // 2. Ruta comodín para cualquier otra petición que no sea API: devolver el index.html
     app.get('*', (req, res) => {
-      res.sendFile(path.join(distPath, 'index.html'));
+      res.sendFile(path.join(distPath, 'index.html'), (err) => {
+        if (err) {
+          console.error("Error sending index.html:", err);
+          res.status(500).send("Frontend build missing or corrupted.");
+        }
+      });
     });
   }
 
