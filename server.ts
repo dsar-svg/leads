@@ -34,7 +34,12 @@ async function startServer() {
   // Example: API to get leads
   app.get("/api/leads", async (req, res) => {
     try {
-      const [rows] = await pool.query("SELECT * FROM leads ORDER BY fechaIngreso DESC");
+      const [rows] = await pool.query(`
+        SELECT leads.*, sellers.name as seller_name 
+        FROM leads 
+        LEFT JOIN sellers ON leads.seller_id = sellers.id 
+        ORDER BY fechaIngreso DESC
+      `);
       res.json(rows);
     } catch (error) {
       console.error(error);
@@ -62,14 +67,46 @@ async function startServer() {
     const { id } = req.params;
     const lead = req.body;
     try {
+      // 1. Get old status to track history
+      const [oldLeadRows]: any = await pool.query("SELECT status FROM leads WHERE id=?", [id]);
+      const oldStatus = oldLeadRows.length > 0 ? oldLeadRows[0].status : null;
+
+      // 2. Perform update
       await pool.query(
         "UPDATE leads SET name=?, nombre_contacto=?, rif=?, telefono=?, ubicacion_estado=?, ubicacion_detail=?, categoria_interes=?, especialidad_tienda=?, canal_origen=?, campana=?, seller_id=?, status=?, whatsapp_link=?, observaciones_vendedor=?, monto_cerrado_usd=?, num_factura=?, fecha_venta=?, updated_at=NOW() WHERE id=?",
         [lead.name, lead.nombre_contacto, lead.rif, lead.telefono, lead.ubicacion_estado, lead.ubicacion_detail, lead.categoria_interes, lead.especialidad_tienda, lead.canal_origen, lead.campana, lead.seller_id, lead.status, lead.whatsapp_link, lead.observaciones_vendedor, lead.monto_cerrado_usd, lead.num_factura, lead.fecha_venta, id]
       );
+
+      // 3. Log history if status changed
+      if (oldStatus !== lead.status) {
+        await pool.query(
+          "INSERT INTO historial_fases (id_lead, fase_anterior, fase_nueva, fecha_cambio, usuario_cambio) VALUES (?, ?, ?, NOW(), ?)",
+          [id, oldStatus, lead.status, lead.updated_by || 'system']
+        );
+      }
+
       res.json({ success: true });
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: "Failed to update lead" });
+    }
+  });
+
+  // KPI Endpoint
+  app.get("/api/kpis", async (req, res) => {
+    try {
+      const [stats]: any = await pool.query(`
+        SELECT 
+          status, 
+          COUNT(*) as count, 
+          SUM(monto_cerrado_usd) as total_amount
+        FROM leads 
+        GROUP BY status
+      `);
+      res.json(stats);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to fetch KPIs" });
     }
   });
 
