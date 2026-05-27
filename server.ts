@@ -110,6 +110,17 @@ async function startServer() {
     }
   });
 
+  // Sellers Endpoint
+  app.get("/api/sellers", async (req, res) => {
+    try {
+      const [rows] = await pool.query("SELECT * FROM sellers");
+      res.json(rows);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Failed to fetch sellers" });
+    }
+  });
+
   // Delete lead
   app.delete("/api/leads/:id", async (req, res) => {
     const { id } = req.params;

@@ -18,6 +18,7 @@ export interface Lead {
   canal_origen: string;
   campana: string;
   seller_id: string;
+  seller_name?: string;
   status: string;
   whatsapp_link: string;
   observaciones_vendedor: string;
@@ -26,6 +27,12 @@ export interface Lead {
   fecha_venta: string;
   created_at: string;
   updated_at: string;
+  // UI Only / Temporary fields for KanbanBoard
+  hasPassedContactado?: boolean;
+  motivoCierre?: string;
+  fechaIngreso?: string;
+  rowNumber?: number;
+  hasSecondPurchase?: boolean;
 }
 
 export interface Column {

@@ -183,13 +183,31 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   // Leads State
-  const [leads, setLeads] = useState<Lead[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('crm_leads_data');
-      return saved ? JSON.parse(saved) : INITIAL_LEADS;
+  const [leads, setLeads] = useState<Lead[]>([]);
+
+  // Fetch from Database
+  const fetchLeadsFromDB = async () => {
+    try {
+      const response = await fetch('/api/leads');
+      if (!response.ok) throw new Error('Failed to fetch leads');
+      const data = await response.json();
+      console.log('Database Leads:', data);
+      setLeads(data);
+    } catch (error) {
+      console.error('Error fetching leads from DB:', error);
+      // Fallback
+      if (typeof window !== 'undefined') {
+        const saved = localStorage.getItem('crm_leads_data');
+        setLeads(saved ? JSON.parse(saved) : INITIAL_LEADS);
+      } else {
+        setLeads(INITIAL_LEADS);
+      }
     }
-    return INITIAL_LEADS;
-  });
+  };
+
+  useEffect(() => {
+    fetchLeadsFromDB();
+  }, []);
 
   useEffect(() => {
     if (onSellersUpdate) {
@@ -203,6 +221,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   // Custom Columns State (Defaulting to 'NUEVO', 'CONTACTADO' and 'CERRADO')
   const [columns, setColumns] = useState<Column[]>(() => {
     const defaultCols: Column[] = [
+      {
+        id: 'CERRADO',
+        title: 'CERRADO',
+        color: 'bg-zinc-650',
+        bgClass: 'bg-[#fafafa]',
+        borderClass: 'border-zinc-200',
+        accentClass: 'bg-zinc-100',
+        textClass: 'text-zinc-700'
+      },
       {
         id: 'NUEVO',
         title: 'NUEVO',
@@ -220,15 +247,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         borderClass: 'border-amber-200',
         accentClass: 'bg-amber-100',
         textClass: 'text-amber-700'
-      },
-      {
-        id: 'CERRADO',
-        title: 'CERRADO',
-        color: 'bg-zinc-650',
-        bgClass: 'bg-[#fafafa]',
-        borderClass: 'border-zinc-200',
-        accentClass: 'bg-zinc-100',
-        textClass: 'text-zinc-700'
       }
     ];
 
@@ -276,7 +294,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const updatedLeads = leads.map(l => l.id === lead.id ? { ...l, vendedor: newVendedor } : l);
     setLeads(updatedLeads);
     localStorage.setItem('crm_leads_data', JSON.stringify(updatedLeads));
-    showToast(`Lead "${lead.nombre}" transferido a ${newVendedor}`, 'success');
+    showToast(`Lead "${lead.name}" transferido a ${newVendedor}`, 'success');
   };
 
   const vendorList = Array.from(
@@ -1917,119 +1935,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               <div>
                 <h2 className="text-lg font-bold text-zinc-900">Panel de Control & Ajustes del Administrador</h2>
                 <p className="text-xs text-zinc-500">
-                  Configura la conexión segura con Google Sheets, personaliza las fases comerciales del embudo y gestiona automatizaciones de Webhook.
+                  Configura y personaliza las fases comerciales del embudo.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* 1. Google Sheets Connection Panel */}
-          <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-zinc-100">
-              <div className="flex items-center gap-2.5">
-                <span className="p-2 bg-emerald-50 text-emerald-600 rounded-xl">
-                  <Database className="w-5 h-5" />
-                </span>
-                <div>
-                  <h3 className="font-bold text-sm text-zinc-800">Origen de los Datos: Google Sheets</h3>
-                  <p className="text-[11px] text-zinc-500">
-                    {token && spreadsheetId 
-                      ? `Sincronizado con tab de hoja: "${sheetTitle || 'Cargando pestaña...'}"` 
-                      : 'Modo demo offline. Activa Google Workspace para persistencia mutua real.'
-                    }
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    localStorage.setItem('crm_leads_data', JSON.stringify(INITIAL_LEADS));
-                    setLeads(INITIAL_LEADS);
-                  }}
-                  className="inline-flex items-center gap-2 bg-indigo-50 border border-indigo-200 hover:bg-indigo-100 text-indigo-700 px-3.5 py-1.5 text-xs font-semibold rounded-xl cursor-pointer transition-all"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Cargar Datos Demo
-                </button>
-                {token ? (
-                  <div className="flex items-center gap-2 bg-emerald-50/50 border border-emerald-200/50 rounded-xl px-3 py-1.5 text-xs text-emerald-850">
-                    <UserCheck className="w-4 h-4 text-emerald-500" />
-                    <span className="font-semibold truncate max-w-[150px]">{user?.email}</span>
-                    <span className="text-zinc-300">|</span>
-                    <button 
-                      onClick={handleGoogleLogout} 
-                      className="text-red-600 hover:text-red-700 font-bold hover:underline cursor-pointer"
-                    >
-                      Desconectar
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={handleGoogleLogin}
-                    className="inline-flex items-center gap-2 bg-white border border-zinc-300 hover:bg-zinc-50 text-zinc-700 px-3.5 py-1.5 text-xs font-semibold rounded-xl cursor-pointer shadow-sm transition-all"
-                  >
-                    {/* SVG Google icon */}
-                    <svg className="w-4 h-4" viewBox="0 0 48 48">
-                      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
-                      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z" />
-                      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z" />
-                      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z" />
-                    </svg>
-                    <span>Conectar Google Drive / Sheets</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <form onSubmit={handleConnectSpreadsheet} className="flex flex-col md:flex-row gap-3">
-              <div className="flex-1">
-                <label className="block text-[10px] font-bold text-zinc-500 uppercase mb-1">ID del Archivo o URL de Google Sheets</label>
-                <div className="relative">
-                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-400" />
-                  <input
-                    type="text"
-                    placeholder="Pega la URL de tu hoja ej: 1A_xG6L86X-7P6H..."
-                    value={spreadsheetInput}
-                    onChange={(e) => setSpreadsheetInput(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 border border-zinc-200 rounded-xl text-xs bg-zinc-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
-              <div className="flex items-end gap-2">
-                <button
-                  type="submit"
-                  disabled={isLoadingFromSheets || !token}
-                  className={`px-4 py-2 text-xs font-semibold rounded-xl text-white transition-colors flex items-center gap-1.5 shadow-sm ${token ? 'bg-zinc-900 hover:bg-zinc-800 cursor-pointer' : 'bg-zinc-300 cursor-not-allowed text-zinc-500'}`}
-                >
-                  {isLoadingFromSheets && <RefreshCw className="w-3.5 h-3.5 animate-spin" />}
-                  <span>Vincular Tabla</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (token && spreadsheetId) {
-                      loadLeads(token, spreadsheetId);
-                    } else {
-                      alert('Inicia sesión con Google para sincronizar.');
-                    }
-                  }}
-                  disabled={isLoadingFromSheets || !token || !spreadsheetId}
-                  className="p-2 border border-zinc-200 hover:bg-zinc-50 rounded-xl text-zinc-600 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed h-[34px]"
-                  title="Sincronizar ahora"
-                >
-                  <RefreshCw className={`w-4 h-4 ${isLoadingFromSheets ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-            </form>
-
-            {sheetsError && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center gap-1.5 font-medium">
-                <AlertTriangle className="w-4 h-4 flex-shrink-0 text-red-500" />
-                <span>{sheetsError}</span>
-              </div>
-            )}
-          </div>
+          {/* 2. Pipeline Stage Editor (Add/Remove Phases) */}
 
           {/* 2. Pipeline Stage Editor (Add/Remove Phases) */}
           <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-4">
@@ -2129,81 +2041,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             </div>
           </div>
 
-          {/* 3. n8n automation webhook configurations */}
-          <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-4">
-            <h3 className="font-bold text-sm text-zinc-800 flex items-center gap-2 border-b border-zinc-100 pb-2">
-              <Settings2 className="w-4.5 h-4.5 text-blue-600" />
-              Dirección de Enlace Webhook n8n
-            </h3>
-            <p className="text-xs text-zinc-500 leading-relaxed">
-              Cada cambio de estatus de prospecto o cierre de ventas en este CRM genera una petición HTTP POST segura hacia tu Webhook de n8n para propagar flujos de trabajo en tiempo real.
-            </p>
-            <form onSubmit={handleSaveWebhook} className="flex flex-col sm:flex-row gap-2">
-              <input
-                type="text"
-                value={webhookUrl}
-                onChange={(e) => setWebhookUrl(e.target.value)}
-                placeholder="https://n8n.tu-servidor.com/webhook/crm-leads"
-                className="flex-1 px-3 py-2 text-xs border rounded-xl bg-zinc-50/50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-              <div className="flex gap-2">
-                <button type="submit" className="px-4 py-2 bg-zinc-900 hover:bg-zinc-800 text-white text-xs font-semibold rounded-xl cursor-pointer transition-colors shadow-xs">
-                  Guardar Url
-                </button>
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    setWebhookUrl(DEFAULT_WEBHOOK_URL);
-                    saveWebhookUrl(DEFAULT_WEBHOOK_URL);
-                    showToast('Webhook de demostración restaurado.', 'info');
-                  }} 
-                  className="px-4 py-2 bg-zinc-100 hover:bg-zinc-200 border border-zinc-200 rounded-xl text-xs font-medium text-zinc-700"
-                >
-                  Restaurar Demo
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* 4. Logs Console */}
-          <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-2">
-              <h3 className="font-bold text-sm text-zinc-855 flex items-center gap-2">
-                <Terminal className="w-4.5 h-4.5 text-amber-500" />
-                Sincronizaciones & Registro de Eventos ({webhookLogs.length})
-              </h3>
-              {webhookLogs.length > 0 && (
-                <button onClick={() => setWebhookLogs([])} className="text-[10px] text-zinc-400 hover:text-red-600 font-bold uppercase transition-colors cursor-pointer">
-                  Limpiar historial
-                </button>
-              )}
-            </div>
-            <div className="max-h-60 overflow-y-auto space-y-2 pr-2">
-              {webhookLogs.length > 0 ? (
-                webhookLogs.map((log) => (
-                  <div key={log.id} className="p-3 bg-zinc-50 border border-zinc-200 rounded-xl space-y-1 font-mono text-[10px] text-zinc-750">
-                    <div className="flex justify-between items-start gap-1 flex-wrap">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="text-zinc-400">[{new Date(log.timestamp).toLocaleTimeString()}]</span>
-                        <strong className="text-blue-700 font-sans text-xs">{log.leadNombre}</strong>
-                        {log.prevStatus && <span className="text-zinc-400 font-bold">{log.prevStatus} →</span>}
-                        <span className="text-zinc-905 font-extrabold bg-amber-50 text-amber-800 rounded px-1.5 py-0.5">{log.newStatus}</span>
-                      </div>
-                      <span className={`px-2 py-0.5 rounded text-[9px] font-bold font-sans ${
-                        log.status === 'SUCCESS' ? 'bg-emerald-55 text-emerald-800 border border-emerald-250' : 'bg-red-55 text-red-800 border border-red-250'
-                      }`}>
-                        {log.status === 'SUCCESS' ? 'SINC_OK' : 'ERROR'}
-                      </span>
-                    </div>
-                    <div className="text-zinc-500 break-all mt-1 text-[9px]">Origen: {log.url}</div>
-                    {log.responseMessage && <div className="text-zinc-650 font-semibold bg-white p-2 rounded-lg mt-1 border border-zinc-200/60 leading-relaxed">Info: {log.responseMessage}</div>}
-                  </div>
-                ))
-              ) : (
-                <p className="text-zinc-400 text-center py-8 text-xs italic">La consola está desocupada. Realiza cambios o arrastra prospectos para generar registros de webhook.</p>
-              )}
-            </div>
-          </div>
         </div>
       )}
 
