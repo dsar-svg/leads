@@ -49,6 +49,19 @@ export const LeadCard: React.FC<LeadCardProps> = ({
   onTransfer,
   vendorList = []
 }) => {
+  const [isTransferOpen, setIsTransferOpen] = React.useState(false);
+  const transferMenuRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (transferMenuRef.current && !transferMenuRef.current.contains(event.target as Node)) {
+        setIsTransferOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: lead.id,
     disabled: isUpdating, // Prevent dragging while updating status
@@ -300,25 +313,33 @@ export const LeadCard: React.FC<LeadCardProps> = ({
               <Edit3 className="w-3.5 h-3.5" />
             </button>
             {userRole === 'ADMIN' && onTransfer && (
-              <div className="relative group/transfer">
+              <div className="relative" ref={transferMenuRef}>
                 <button
-                  className="p-1 text-zinc-500 hover:text-blue-700 hover:bg-blue-50 rounded-md transition-colors"
+                  onClick={() => setIsTransferOpen(!isTransferOpen)}
+                  className={`p-1 rounded-md transition-colors ${
+                    isTransferOpen ? 'text-blue-700 bg-blue-50' : 'text-zinc-500 hover:text-blue-700 hover:bg-blue-50'
+                  }`}
                   title="Transferir Lead"
                 >
                   <Users2 className="w-3.5 h-3.5" />
                 </button>
-                <div className="absolute right-0 bottom-full mb-2 bg-white border border-zinc-200 rounded-lg shadow-lg p-2 w-48 opacity-0 group-hover/transfer:opacity-100 transition-opacity pointer-events-none group-hover/transfer:pointer-events-auto z-50">
-                  <p className="text-[10px] font-bold text-zinc-400 uppercase mb-2">Transferir a:</p>
-                  {vendorList.filter(v => v !== lead.vendedor).map(v => (
-                    <button
-                      key={v}
-                      onClick={() => onTransfer(lead, v)}
-                      className="block w-full text-left px-2 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100 rounded-md"
-                    >
-                      {v}
-                    </button>
-                  ))}
-                </div>
+                {isTransferOpen && (
+                  <div className="absolute right-0 bottom-full mb-2 bg-white border border-zinc-200 rounded-lg shadow-lg p-2 w-48 z-50">
+                    <p className="text-[10px] font-bold text-zinc-400 uppercase mb-2">Transferir a:</p>
+                    {vendorList.filter(v => v !== lead.vendedor).map(v => (
+                      <button
+                        key={v}
+                        onClick={() => {
+                          onTransfer!(lead, v);
+                          setIsTransferOpen(false);
+                        }}
+                        className="block w-full text-left px-2 py-1.5 text-xs text-zinc-700 hover:bg-zinc-100 rounded-md"
+                      >
+                        {v}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
             <button

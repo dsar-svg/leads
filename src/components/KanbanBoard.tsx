@@ -16,7 +16,7 @@ import {
   PointerSensor,
   TouchSensor,
 } from '@dnd-kit/core';
-import { 
+import {
   Plus, 
   Settings2, 
   HelpCircle, 
@@ -27,6 +27,7 @@ import {
   Compass, 
   TrendingUp, 
   Users2, 
+  Trophy,
   X,
   Sparkles,
   Search,
@@ -45,6 +46,7 @@ import {
   ShieldCheck,
   UserCircle2,
   Calendar,
+  Clock,
   Lock,
   Archive,
   BarChart4,
@@ -58,6 +60,8 @@ import {
 import { Lead, LeadStatus, Column, WebhookLog } from '../types';
 import { KanbanColumn } from './KanbanColumn';
 import { LeadCard } from './LeadCard';
+import { SellerRanking } from './SellerRanking';
+import { SellerBadge } from './SellerBadge';
 import { INITIAL_LEADS } from '../mockData';
 import { 
   getWebhookUrl, 
@@ -300,6 +304,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [boardLayout, setBoardLayout] = useState<'columns' | 'table'>('columns');
   const [searchQuery, setSearchQuery] = useState('');
   const [adminVendedorFilter, setAdminVendedorFilter] = useState<string>('todos');
+  const [selectedVendorStatsFilter, setSelectedVendorStatsFilter] = useState<string>('Todos');
   const [closedReasonFilter, setClosedReasonFilter] = useState<'todos' | 'VENTA' | 'ABANDONADO'>('todos');
   const [webhookUrl, setWebhookUrl] = useState(getWebhookUrl());
   const [webhookLogs, setWebhookLogs] = useState<WebhookLog[]>([]);
@@ -1106,22 +1111,33 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   // Pipeline value
   const activePipelineValue = activeLeads.reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
   
+  // Stats filtered by selected vendedor
+  const statsLeads = selectedVendorStatsFilter === 'Todos' 
+    ? leads 
+    : leads.filter(l => l.vendedor === selectedVendorStatsFilter);
+
+  const statsClosedLeads = statsLeads.filter(l => 
+    l.estatus === 'CERRADO_VENTA' || 
+    l.estatus === 'CERRADO' || 
+    l.estatus === 'CERRADO_ABANDONADO'
+  );
+
   // Sales closed total volume
-  const totalClosedSalesValue = closedLeads
+  const totalClosedSalesValue = statsClosedLeads
     .filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO')
     .reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
 
   // Count resolved
-  const closedSalesCount = closedLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').length;
-  const closedAbandonedCount = closedLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO').length;
-  const totalClosedCount = closedLeads.length;
+  const closedSalesCount = statsClosedLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').length;
+  const closedAbandonedCount = statsClosedLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO').length;
+  const totalClosedCount = statsClosedLeads.length;
 
   const conversionPercentage = totalClosedCount > 0 
     ? Math.round((closedSalesCount / totalClosedCount) * 100) 
     : 0;
 
   // Calculate average closure time globally in days
-  const closedLeadsWithBothDates = closedLeads.filter(l => {
+  const closedLeadsWithBothDates = statsClosedLeads.filter(l => {
     if (!l.fechaIngreso || !l.fechaVenta) return false;
     const d1 = new Date(l.fechaIngreso).getTime();
     const d2 = new Date(l.fechaVenta).getTime();
@@ -1138,13 +1154,55 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     ? Math.round(totalClosureDays / closedLeadsWithBothDates.length)
     : 0;
 
+  // Calculate average response time (New -> Contacted) in hours
+  const firstContactLogs = statsLeads.map(lead => {
+    const logs = webhookLogs.filter(log => log.leadId === lead.id && log.newStatus === 'CONTACTADO');
+    if (logs.length === 0) return null;
+    logs.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+    return logs[0];
+  }).filter(Boolean) as WebhookLog[];
+
+  const totalResponseTimeMs = firstContactLogs.reduce((sum, log) => {
+    const lead = statsLeads.find(l => l.id === log.leadId);
+    if (!lead || !lead.fechaIngreso) return sum;
+    const ingresoTime = new Date(lead.fechaIngreso).getTime();
+    const contactTime = new Date(log.timestamp).getTime();
+    return sum + (contactTime - ingresoTime);
+  }, 0);
+
+  const averageResponseTimeHours = firstContactLogs.length > 0
+    ? Math.round((totalResponseTimeMs / firstContactLogs.length) / (1000 * 60 * 60))
+    : 0;
+
+  // Seller stats calculation for ranking
+  const sellerStats = Array.from(new Set(leads.map(l => l.vendedor).filter(Boolean))).map(seller => {
+    const sellerLeads = leads.filter(l => l.vendedor === seller);
+    const closedSales = sellerLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').length;
+    const totalLeads = sellerLeads.length;
+    const efficiency = totalLeads > 0 ? (closedSales / totalLeads) * 100 : 0;
+    
+    return { name: seller!, closedSales, totalLeads, efficiency };
+  }).sort((a, b) => b.efficiency - a.efficiency);
+
+  const currentUserIndex = sellerStats.findIndex(s => s.name === selectedVendedor);
+  const isTop1 = currentUserIndex === 0;
+
+  useEffect(() => {
+    const prevRank = localStorage.getItem('last_user_rank');
+    if (prevRank !== null) {
+      const prevRankNum = parseInt(prevRank, 10);
+      if (prevRankNum === 0 && currentUserIndex > 0) {
+        showToast("¡Atención! Has perdido el Top 1 en el ranking de efectividad.", "error");
+      }
+    }
+    localStorage.setItem('last_user_rank', currentUserIndex.toString());
+  }, [currentUserIndex]);
+
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-6">
-      
-
-      
       {(activeTab === 'board' || activeTab === 'closed') && (
-        <div className="bg-white rounded-2xl border border-zinc-200/80 p-5 shadow-xs">
+        <div className="bg-white rounded-2xl border border-zinc-200/80 p-5 shadow-xs space-y-4">
+
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
             <div>
               <h1 className="text-xl font-extrabold text-zinc-900 mt-1">SUPRI LEADS</h1>
@@ -1153,6 +1211,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               </p>
             </div>
           </div>
+        
 
           {/* Global Toolbar Panel depending on active state */}
           <div className="mt-4 pt-4 border-t border-zinc-100 flex flex-wrap items-center justify-between gap-3">
@@ -1578,8 +1637,21 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               <BarChart4 className="w-5 h-5 text-blue-600" />
               Estadísticas de Rendimiento y Conversión
             </h2>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              Métricas consolidadas de {userRole === 'ADMIN' ? 'todos los vendedores' : `sesión de "${selectedVendedor}"`}.
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-xs font-bold text-zinc-500 uppercase">Filtrar por vendedor:</span>
+              <select
+                value={selectedVendorStatsFilter}
+                onChange={(e) => setSelectedVendorStatsFilter(e.target.value)}
+                className="px-3 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg text-zinc-700 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer shadow-xs"
+              >
+                <option value="Todos">Todos</option>
+                {uniqueSellers.map((seller) => (
+                  <option key={seller} value={seller}>{seller}</option>
+                ))}
+              </select>
+            </div>
+            <p className="text-xs text-zinc-500 mt-2">
+              Métricas consolidadas de {selectedVendorStatsFilter === 'Todos' ? 'todos los vendedores' : `vendedor "${selectedVendorStatsFilter}"`}.
             </p>
           </div>
 
@@ -1609,6 +1681,18 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
             <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
               <div>
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Promedio Respuesta (N &gt; C)</span>
+                <span className="text-xl font-bold text-zinc-850 mt-1 block">
+                  {averageResponseTimeHours} <span className="text-xs font-normal text-zinc-500">horas</span>
+                </span>
+              </div>
+              <span className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg">
+                <Clock className="w-5 h-5" />
+              </span>
+            </div>
+            
+            <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
+              <div>
                 <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Promedio Tiempo de Cierre</span>
                 <span className="text-xl font-bold text-zinc-850 mt-1 block">
                   {averageClosureTimeGlobal} <span className="text-xs font-normal text-zinc-500">días</span>
@@ -1619,6 +1703,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               </span>
             </div>
           </div>
+
+          {userRole === 'ADMIN' && <SellerRanking leads={leads} currentUser={selectedVendedor} />}
 
           {/* Graphical charts grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1678,9 +1764,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               {/* Bar List */}
               <div className="space-y-3 flex-1 flex flex-col justify-center">
                 {columns.map((column) => {
-                  const amtInCol = activeLeads.filter(l => l.estatus === column.id).length;
-                  const ratio = activeLeadsCount > 0 ? (amtInCol / activeLeadsCount) * 100 : 0;
-                  const totalEstVal = activeLeads.filter(l => l.estatus === column.id).reduce((s, l) => s + (l.valorEstimado || 0), 0);
+                  const statsActiveLeads = statsLeads.filter(l => 
+                    l.estatus !== 'CERRADO_VENTA' && 
+                    l.estatus !== 'CERRADO_ABANDONADO' &&
+                    l.estatus !== 'CERRADO'
+                  );
+                  const statsActiveLeadsCount = statsActiveLeads.length;
+                  const amtInCol = statsActiveLeads.filter(l => l.estatus === column.id).length;
+                  const ratio = statsActiveLeadsCount > 0 ? (amtInCol / statsActiveLeadsCount) * 100 : 0;
 
                   return (
                     <div key={column.id} className="space-y-1">
@@ -2532,6 +2623,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         </div>
       )}
 
+
       {/* Toast Notification HUD */}
       {toast && (
         <div 
@@ -2564,25 +2656,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         </div>
       )}
 
-      {/* Celebration Overlay */}
-      <AnimatePresence>
-        {showCelebration && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm"
-          >
-            <div className="bg-white p-10 rounded-3xl shadow-2xl flex flex-col items-center gap-6 border-4 border-yellow-400">
-              <Sparkles className="w-24 h-24 text-yellow-500 animate-spin" />
-              <div className="text-center">
-                <h2 className="text-4xl font-extrabold text-blue-600 font-sans tracking-tight">¡Genial!</h2>
-                <p className="text-zinc-500 font-bold mt-2">Lead cerrado exitosamente.</p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
     </div>
-  );
-};
+    );
+  };

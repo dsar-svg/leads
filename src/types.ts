@@ -6,27 +6,26 @@
 export type LeadStatus = string;
 
 export interface Lead {
-  id: string; // ID_Lead
-  fechaIngreso: string; // Fecha Ingreso
-  nombre: string; // Nombre Contacto
-  empresa: string; // Empresa/Tienda
-  rif: string; // RIF
-  telefono: string; // Telefono
-  ubicacionEstado: string; // Ubicacion Estado
-  ubicacionDetalle: string; // Ubicacion Detalle
-  canalOrigen: string; // Canal Origen
-  campana: string; // Campana
-  vendedor: string; // Vendedor
-  estatus: LeadStatus; // Fase Oportunidad ('NUEVO', 'CONTACTADO', or any custom status, and 'CERRADO' or 'CERRADO_VENTA' / 'CERRADO_ABANDONADO' for closed leads)
-  notas: string; // Observaciones Vendedor
-  valorEstimado: number; // Monto Cerrado USD (only if closed as sale)
-  numFactura: string; // Num Factura (only if closed as sale)
-  fechaVenta: string; // Fecha Venta (independent closure date)
-  motivoCierre?: 'VENTA' | 'ABANDONADO' | string; // Closure type
-  categoriaInteres: string; // Categoria de Interes
-  rowNumber?: number; // Optional reference to the Google Sheet row index (1-based, typically row 2+)
-  hasPassedContactado?: boolean; // Ha pasado por la fase de contactado
-  hasSecondPurchase?: boolean; // Indica si ya se registró una segunda compra para este lead
+  id: string;
+  name: string;
+  nombre_contacto: string;
+  rif: string;
+  telefono: string;
+  ubicacion_estado: string;
+  ubicacion_detail: string;
+  categoria_interes: string;
+  especialidad_tienda: string;
+  canal_origen: string;
+  campana: string;
+  seller_id: string;
+  status: string;
+  whatsapp_link: string;
+  observaciones_vendedor: string;
+  monto_cerrado_usd: number;
+  num_factura: string;
+  fecha_venta: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Column {
