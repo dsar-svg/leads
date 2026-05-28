@@ -438,7 +438,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       console.error(error);
       setSheetsError(error.message || 'Error al conectar.');
       setLeads(INITIAL_LEADS);
-    } filter {
+    } finally {
       setIsLoadingFromSheets(false);
     }
   };
