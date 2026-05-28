@@ -506,19 +506,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const closedAbandonedCount = statsClosedLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO').length;
   const totalClosedCount = statsClosedLeads.length;
   const conversionPercentage = totalClosedCount > 0 ? Math.round((closedSalesCount / totalClosedCount) * 100) : 0;
-
-  const closedLeadsWithBothDates = statsClosedLeads.filter(l => l.fechaIngreso && l.fechaVenta && !isNaN(new Date(l.fechaIngreso).getTime()) && !isNaN(new Date(l.fechaVenta).getTime()));
   
-  // Nueva lógica para "Tiempo Promedio Cierre" (validando que los campos existan)
   const closedLeadsWithBothDates = statsClosedLeads.filter(l => 
-    l.fechaIngreso && l.fechaVenta && 
-    new Date(l.fechaIngreso).getTime() > 0 && 
-    new Date(l.fechaVenta).getTime() > 0
-  );
+  l.fechaIngreso && l.fechaVenta && 
+  new Date(l.fechaIngreso).getTime() > 0 && 
+  new Date(l.fechaVenta).getTime() > 0
+);
 
   const totalClosureDays = closedLeadsWithBothDates.reduce((sum, l) => {
-    const diff = new Date(l.fechaVenta).getTime() - new Date(l.fechaIngreso).getTime();
-    return sum + Math.max(0, Math.round(diff / (1000 * 60 * 60 * 24)));
+  const diff = new Date(l.fechaVenta).getTime() - new Date(l.fechaIngreso).getTime();
+  return sum + Math.max(0, Math.round(diff / (1000 * 60 * 60 * 24)));
   }, 0);
 
   const averageClosureTimeGlobal = closedLeadsWithBothDates.length > 0 
