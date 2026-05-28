@@ -901,7 +901,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               </>
             );
           })()}
-
+          )}
           {/* Tabla General de Rendimiento Oficial por Vendedores (ESTRICTAMENTE EXCLUSIVA PARA ADMIN) */}
         {/* Tabla de Rendimiento Oficial */}
 {userRole === 'ADMIN' && (
