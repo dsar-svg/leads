@@ -121,41 +121,41 @@ async function startServer() {
     }
   });
 
-  // 3. ACTUALIZAR LEAD (Cálculo automático de Tiempo de Primer Contacto)
+  // 3. ACTUALIZAR LEAD (Cálculo exacto de Tiempo de Primer Contacto en Minutos)
   app.put("/api/leads/:id", async (req, res) => {
     if (!pool) return res.status(503).json({ error: "Database not available" });
     const { id } = req.params;
     const lead = req.body;
     try {
-      // 1. Obtener los datos actuales del lead antes de actualizar
-      const [oldLeadRows]: any = await pool.query("SELECT status, created_at, tiempo_primer_contacto_horas FROM leads WHERE id=?", [id]);
+      // 1. Obtener los datos actuales del lead antes de la mutación
+      const [oldLeadRows]: any = await pool.query("SELECT status, tiempo_primer_contacto_minutos FROM leads WHERE id=?", [id]);
       if (oldLeadRows.length === 0) return res.status(404).json({ error: "Lead not found" });
       
       const oldStatus = oldLeadRows[0].status;
-      let tiempoPrimerContacto = oldLeadRows[0].tiempo_primer_contacto_horas;
+      let tiempoPrimerContactoMinutos = oldLeadRows[0].tiempo_primer_contacto_minutos;
 
-      // 2. Si pasa de NUEVO a CONTACTADO y no tiene tiempo registrado, calculamos las horas reales transcurridas
-      if (oldStatus === 'NUEVO' && lead.estatus === 'CONTACTADO' && tiempoPrimerContacto === null) {
+      // 2. Si pasa de NUEVO a CONTACTADO por primera vez, calculamos la diferencia exacta en MINUTOS
+      if (oldStatus === 'NUEVO' && lead.estatus === 'CONTACTADO' && tiempoPrimerContactoMinutos === null) {
         const [timeResult]: any = await pool.query(
-          "SELECT TIMESTAMPDIFF(HOUR, created_at, NOW()) as horas FROM leads WHERE id=?", [id]
+          "SELECT TIMESTAMPDIFF(MINUTE, created_at, NOW()) as minutos FROM leads WHERE id=?", [id]
         );
-        // Si fue menor a 1 hora, guardamos 1 hora como mínimo representativo
-        tiempoPrimerContacto = timeResult[0].horas <= 0 ? 1 : timeResult[0].horas;
+        // Guardamos los minutos exactos reales (si da 0 por ser inmediato, forzamos 1 minuto)
+        tiempoPrimerContactoMinutos = timeResult[0].minutos <= 0 ? 1 : timeResult[0].minutos;
       }
 
-      // 3. Ejecutar la actualización incorporando la nueva columna
+      // 3. Ejecutar la actualización en las columnas físicas de tu base de datos
       await pool.query(
         `UPDATE leads SET 
           name=?, nombre_contacto=?, rif=?, telefono=?, ubicacion_estado=?, ubicacion_detalle=?, 
           categoria_interes=?, canal_origen=?, campana=?, seller_id=?, 
           status=?, observaciones_vendedor=?, monto_cerrado_usd=?, 
-          num_factura=?, fecha_venta=?, motivo_cierre=?, tiempo_primer_contacto_horas=?, updated_at=NOW() 
+          num_factura=?, fecha_venta=?, motivo_cierre=?, tiempo_primer_contacto_minutos=?, updated_at=NOW() 
         WHERE id=?`,
         [
           lead.empresa || lead.nombre || '', lead.nombre || '', lead.rif || '', lead.telefono || '', lead.ubicacionEstado || '', 
           lead.ubicacionDetalle || lead.ubicacion_detalle || '', lead.categoriaInteres || '', lead.canalOrigen || '', lead.campana || '', 
           lead.seller_id || null, lead.estatus || 'NUEVO', lead.notas || '', Number(lead.valorEstimado || 0), 
-          lead.numFactura || '', lead.fechaVenta || null, lead.motivoCierre || null, tiempoPrimerContacto, id
+          lead.numFactura || '', lead.fechaVenta || null, lead.motivoCierre || null, tiempoPrimerContactoMinutos, id
         ]
       );
 
@@ -173,7 +173,7 @@ async function startServer() {
       res.status(500).json({ error: "Failed to update lead in database" });
     }
   });
-
+  
   // 4. METRICAS Y KPIS GENERALES (Consolidando directo desde la tabla leads)
   app.get("/api/kpis", async (req, res) => {
     if (!pool) return res.status(503).json({ error: "Database not available" });
