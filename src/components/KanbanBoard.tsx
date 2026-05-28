@@ -148,16 +148,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
 
  
-  
+
+
+
+
   const [sellers, setSellers] = useState<any[]>([]);
-  
+
   useEffect(() => {
     fetch('/api/sellers')
       .then(res => res.json())
       .then(data => setSellers(data))
       .catch(err => console.error("Error cargando vendedores:", err));
   }, []);
-  
+
 
     // AGREGA ESTO AQUÍ:
   const sellersMap = React.useMemo(() => {
@@ -481,7 +484,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   const uniqueSellers: string[] = Array.from(new Set(leads.map(l => (l.vendedor || '').trim()).filter(Boolean)));
-  
+
   const roleFilteredLeads = leads.filter(lead => {
     if (userRole === 'ADMIN') {
       if (adminVendedorFilter === 'todos') return true;
@@ -512,7 +515,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   const activeLeadsCount = activeLeads.length;
   const activePipelineValue = activeLeads.reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
-  
+
   const statsLeads = selectedVendorStatsFilter === 'Todos' ? leads : leads.filter(l => l.vendedor === selectedVendorStatsFilter);
   const statsClosedLeads = statsLeads.filter(l => 
   l.estatus === 'CERRADO_VENTA' || 
@@ -527,7 +530,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const closedAbandonedCount = statsClosedLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO').length;
   const totalClosedCount = statsClosedLeads.length;
   const conversionPercentage = totalClosedCount > 0 ? Math.round((closedSalesCount / totalClosedCount) * 100) : 0;
-  
+
   const closedLeadsWithBothDates = statsClosedLeads.filter(l => 
   l.fechaIngreso && l.fechaVenta && 
   new Date(l.fechaIngreso).getTime() > 0 && 
@@ -704,7 +707,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               <BarChart4 className="w-5 h-5 text-blue-600" />
               Estadísticas de Rendimiento y Conversión
             </h2>
-            
+
             {/* Si es ADMIN: Muestra el selector global para auditar a todo el equipo */}
             {userRole === 'ADMIN' ? (
               <div className="flex items-center gap-2 mt-3">
@@ -729,7 +732,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 </span>
               </div>
             )}
-            
+
             <p className="text-xs text-zinc-500 mt-2">
               Métricas consolidadas del vendedor seleccionado en tiempo real directamente desde MySQL.
             </p>
@@ -738,30 +741,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           {/* Bloque lógico de sincronización de datos forzada para el vendedor */}
           {(() => {
             const currentFilter = userRole === 'ADMIN' ? selectedVendorStatsFilter : selectedVendedor;
-            
-           const localStatsLeads = React.useMemo(() => {
-  // Si no hay leads, devolvemos array vacío
-  if (!leads || leads.length === 0) return [];
-  
-  // Si el filtro es 'Todos', devolvemos todo
-  if (currentFilter === 'Todos') return leads;
 
-  return leads.filter(l => {
-    // Convertimos ambos a string para asegurar comparación exacta
-    const lId = l.seller_id ? l.seller_id.toString() : 'sin_id';
-    
-    // Obtenemos el nombre del mapa (o el ID si no lo encuentra, para depurar)
-    const sellerName = sellersMap[lId] || "Sin Asignar";
-    
-    // Normalizamos ambos lados
-    const nameFormatted = sellerName.toString().trim().toLowerCase();
-    const filterFormatted = currentFilter.toString().trim().toLowerCase();
-    console.log(`Comparando Lead ${l.id} | Nombre: ${sellerName} | Filtro: ${currentFilter}`);
-    console.log("Debug Filtro:", { lId, sellerName, nameFormatted, filterFormatted });
-    return nameFormatted === filterFormatted;
-  })
-    ;
-}, [leads, currentFilter, sellersMap]);
+           const localStatsLeads = currentFilter === 'Todos' 
+            ? leads 
+            : leads.filter(l => {
+                const sellerName = sellersMap[l.seller_id?.toString()] || "Sin Asignar";
+                return sellerName.trim().toLowerCase() === currentFilter.trim().toLowerCase();
+              });
 
             const localStatsClosedLeads = localStatsLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO' || l.estatus === 'CERRADO_ABANDONADO');
             const localTotalClosedSalesValue = localStatsClosedLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
@@ -807,7 +793,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Recaudado USD</span><span className="text-xl font-bold text-zinc-850 mt-1 block">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(localTotalClosedSalesValue)}</span></div>
                     <span className="p-2.5 bg-blue-50 text-blue-650 rounded-lg"><DollarSign className="w-5 h-5" /></span>
                   </div>
-                  
+
                   {/* TARJETA OPTIMIZADA: TIEMPO DE PRIMER CONTACTO EXACTO EN DÍAS/HORAS/MINUTOS */}
                   <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
                     <div>
@@ -818,7 +804,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     </div>
                     <span className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg"><Clock className="w-5 h-5" /></span>
                   </div>
-                  
+
                   <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
                     <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Tiempo Promedio Cierre</span><span className="text-xl font-bold text-zinc-850 mt-1 block">{localAverageClosureTimeGlobal > 0 ? localAverageClosureTimeGlobal : '—'} <span className="text-xs font-normal text-zinc-500">días</span></span></div>
                     <span className="p-2.5 bg-amber-50 text-amber-600 rounded-lg"><Calendar className="w-5 h-5" /></span>
