@@ -485,7 +485,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
-  const uniqueSellers: string[] = Array.from(new Set(leads.map(l => (l.seller_name || '').trim()).filter(Boolean))
+  const uniqueSellers: string[] = Array.from(new Set(leads.map(l => (l.seller_name || '').trim()).filter(Boolean)));
 
   const roleFilteredLeads = leads.filter(lead => {
     
