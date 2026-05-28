@@ -40,13 +40,15 @@ async function startServer() {
   });
 
   // 1. OBTENER LEADS (Se eliminó 'fechaIngreso' y se adaptó a la estructura exacta en snake_case)
-  app.get("/api/leads", async (req, res) => {
+  // Ejemplo de cómo debe quedar tu ruta en server.ts
+app.get("/api/leads", async (req, res) => {
   try {
-    const [rows] = await pool.query("SELECT ..."); 
-    return res.json(rows); // <--- IMPORTANTE: Agrega el 'return' aquí
+    const [rows] = await pool.query("SELECT ... TU QUERY ...");
+    // El 'return' evita que el código siga ejecutándose hacia abajo
+    return res.json(rows); 
   } catch (error) {
     console.error("Error en SELECT:", error);
-    // Si ya enviamos una respuesta, no debemos enviar otra
+    // Solo enviamos respuesta si no se ha enviado ya
     if (!res.headersSent) {
       return res.status(500).json({ error: "Error interno" });
     }
