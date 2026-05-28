@@ -458,7 +458,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       }
     } catch (error: any) {
       console.error(error);
-      setSheetsError(error.message || 'Error de autorización.');
+      setSheetsError(error.message || 'Error al conectar.');
+      setLeads(INITIAL_LEADS);
     } finally {
       setIsLoadingFromSheets(false);
     }
