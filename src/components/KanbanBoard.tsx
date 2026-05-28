@@ -289,13 +289,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   // Sincronización real e infalible con Express y MySQL
+  // Perform status updates hacia tu Servidor Express Real con tipado flexible
   const handleStatusChange = async (leadId: string, newStatus: string, closureData?: any) => {
-    const leadIdx = leads.findIndex((l: any) => l.id === leadId);
+    const leadIdx = leads.findIndex((l: any) => l.id.toString() === leadId.toString());
     if (leadIdx === -1) return;
 
     const originalLead = leads[leadIdx];
     const prevStatus = originalLead.estatus;
 
+    // 1. Construimos el objeto unificado uniendo los datos previos con el cierre
     const updatedLead: any = {
       ...originalLead,
       estatus: newStatus,
@@ -303,14 +305,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       ...(closureData || {})
     };
 
-    setLeads((prev: any[]) => prev.map((l: any) => l.id === leadId ? updatedLead : l));
-    setUpdatingLeadIds((prev: string[]) => [...prev, leadId]);
+    // 2. Actualización optimista de la interfaz
+    setLeads((prev: any[]) => prev.map((l: any) => l.id.toString() === leadId.toString() ? updatedLead : l));
+    setUpdatingLeadIds((prev: string[]) => [...prev, leadId.toString()]);
 
     if (newStatus === 'CERRADO_VENTA' || newStatus.toLowerCase().includes('cerrado')) {
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 3000);
     }
 
+    // 3. Disparamos la petición HTTP PUT real a tu backend en Express
     try {
       const response = await fetch(`/api/leads/${leadId}`, {
         method: 'PUT',
@@ -320,12 +324,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
       if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
       showToast(`¡Excelente! "${originalLead.nombre}" guardado con éxito en MySQL.`, 'success');
-      fetchLeadsFromDB(); // Forzamos recarga limpia desde la base de datos para refrescar estados numéricos
+      
+      // IMPORTANTE: Recargamos los leads desde la BD para garantizar que el Front tenga los IDs numéricos idénticos a MySQL
+      fetchLeadsFromDB();
     } catch (error: any) {
-      console.error(error);
-      showToast('Error de comunicación: No se pudo registrar en la base de datos.', 'error');
+      console.error('Error al actualizar el lead en backend:', error);
+      showToast('Error de comunicación: No se pudo guardar en la base de datos.', 'error');
     } finally {
-      setUpdatingLeadIds((prev: string[]) => prev.filter((id: string) => id !== leadId));
+      setUpdatingLeadIds((prev: string[]) => prev.filter((id: string) => id.toString() !== leadId.toString()));
     }
   };
 
@@ -424,31 +430,40 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const handleSaveLead = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formLead) return;
+
     if (!formLead.nombre?.trim() || !formLead.empresa?.trim() || !formLead.telefono?.trim()) {
-      setFormError('Rellene Nombre, Empresa y Teléfono.');
+      setFormError('Campos requeridos vacíos. Rellene Nombre, Empresa y Teléfono.');
       return;
     }
 
-    const isEditing = !!formLead.id;
+    // Si el ID contiene una "L-", significa que es un lead nuevo en memoria y requiere un POST en lugar de un PUT
+    const isEditing = !!formLead.id && !formLead.id.toString().startsWith('L-');
     setFormError('');
 
     try {
       if (isEditing) {
         await handleStatusChange(formLead.id, formLead.estatus, formLead);
       } else {
+        // Quitamos el ID temporal antes de enviar para que MySQL use su AUTO_INCREMENT de forma limpia
+        const { id, ...leadDataToSend } = formLead;
+        
         const response = await fetch('/api/leads', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formLead)
+          body: JSON.stringify(leadDataToSend)
         });
-        if (!response.ok) throw new Error('Error al registrar lead');
+        
+        if (!response.ok) throw new Error('Error al registrar lead nuevo en servidor Express');
         showToast('Lead registrado con éxito en la base de datos.', 'success');
+        
+        // Forzamos la lectura limpia desde MySQL para pintar la tarjeta con su ID numérico real
         await fetchLeadsFromDB();
       }
       setIsFormOpen(false);
       setFormLead(null);
     } catch (err: any) {
-      setFormError(err.message || 'Error al guardar.');
+      console.error(err);
+      setFormError(err.message || 'Error al guardar el registro.');
     }
   };
 
