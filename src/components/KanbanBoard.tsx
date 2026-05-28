@@ -924,11 +924,28 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                         return { vName, total: vLeads.length, vActive, vWon, vLost, vRate, vRev, vAverageClosureTime };
                       });
 
-                      const sortedSellers = [...sellersWithData].sort((a, b) => b.vRev - a.vRev);
+                     const sortedSellers = [...sellers].map(seller => {
+                       // Usamos el nombre del vendedor que viene del array de objetos 'sellers'
+                      const vName = seller.name || "Sin Asignar";
+                      
+                      // Filtramos los leads de este vendedor usando su ID o nombre
+                      const vLeads = leads.filter(l => (l.seller_name || '').trim().toLowerCase() === vName.toLowerCase());
+                      
+                      // ... (aquí mantienes el resto de tus cálculos de vActive, vWon, vLost, etc.)
+                      const vActive = vLeads.filter(l => l.estatus !== 'CERRADO_VENTA' && l.estatus !== 'CERRADO_ABANDONADO' && l.estatus !== 'CERRADO').length;
+                      // ... resto del código
+                      
+                      return { vName, /* ... resto de propiedades */ };
+                  }).sort((a, b) => b.vRev - a.vRev);
 
                       return sortedSellers.map(seller => (
+                        sortedSellers.map(seller => (
                         <tr key={seller.vName} className="hover:bg-zinc-50/45 transition-colors text-zinc-700">
-                          <td className="p-3 font-bold text-zinc-900 flex items-center gap-1.5"><User className="w-3.5 h-3.5 text-zinc-400" />{seller.vName}</td>
+                          {/* AQUÍ ESTABA EL POSIBLE ERROR: Asegúrate de acceder al string vName */}
+                          <td className="p-3 font-bold text-zinc-900 flex items-center gap-1.5">
+                             <User className="w-3.5 h-3.5 text-zinc-400" />
+                             {seller.vName} 
+                          </td>
                           <td className="p-3 font-semibold">{seller.total}</td>
                           <td className="p-3 font-medium text-zinc-500">{seller.vActive}</td>
                           <td className="p-3 font-bold text-emerald-700">{seller.vWon}</td>
