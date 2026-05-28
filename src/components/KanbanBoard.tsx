@@ -158,10 +158,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   useEffect(() => {
     fetch('/api/sellers')
-      .then(res => res.json())
+      .then(res => {
+      // Si la respuesta no es OK, lanza un error para que el .catch lo atrape
+      if (!res.ok) {
+        throw new Error('Error al conectar con la API de vendedores');
+      }
+      return res.json();
+    })
       .then(data => onSellersUpdate(data))
       .catch(err => console.error("Error cargando vendedores:", err));
-  }, []);
+  }, [onSellersUpdate]);
 
 
     // AGREGA ESTO AQUÍ:
@@ -487,23 +493,23 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
   const uniqueSellers: string[] = Array.from(new Set(leads.map(l => (l.seller_name || '').trim()).filter(Boolean)));
 
-  const roleFilteredLeads = leads.filter(lead => {
-    
-    const filterValue = adminVendedorFilter.toLowerCase();
-  const leadSellerName = (lead.seller_name || '').trim().toLowerCase();
+ const roleFilteredLeads = leads.filter(lead => {
+  const filterValue = adminVendedorFilter.toLowerCase().trim();
+  const leadSellerName = (lead.seller_name || '').toLowerCase().trim();
   
-  // LOG DE VERIFICACIÓN
-  console.log(`Comparando: Filtro=[${filterValue}] vs Lead=[${leadSellerName}] | Match: ${filterValue === leadSellerName}`);
-    
+  // 1. Lógica para el ADMIN
   if (userRole === 'ADMIN') {
-    if (adminVendedorFilter === 'todos') return true;
+    // Si el filtro es 'todos' (en minúsculas), devolvemos todo
+    if (filterValue === 'todos') return true;
     
-    // Aquí es donde sucede la magia: comparamos el nombre que viene del JOIN
-    return (lead.seller_name || '').trim().toLowerCase() === adminVendedorFilter.toLowerCase();
+    // Si no es 'todos', comparamos el nombre del vendedor del lead con el filtro
+    return leadSellerName === filterValue;
   }
   
-  // Para usuarios normales, si quieres filtrar por su nombre:
-  return (lead.seller_name || '').trim().toLowerCase() === selectedVendedor.trim().toLowerCase();
+  // 2. Lógica para el VENDEDOR (usuario normal)
+  // Aquí usamos 'selectedVendedor' que viene por props para filtrar solo lo suyo
+  const vendorFilter = (selectedVendedor || '').toLowerCase().trim();
+  return leadSellerName === vendorFilter;
 });
 
   const filteredLeads = roleFilteredLeads.filter(lead => {
