@@ -564,63 +564,67 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   };
 
   // Perform status updates
-  const handleStatusChange = async (leadId: string, newStatus: string) => {
+  // Perform status updates hacia tu Servidor Express Real
+  const handleStatusChange = async (leadId: string, newStatus: string, closureData?: any) => {
     const leadIdx = leads.findIndex(l => l.id === leadId);
     if (leadIdx === -1) return;
 
     const originalLead = leads[leadIdx];
     const prevStatus = originalLead.estatus;
-    if (prevStatus === newStatus) return;
+    if (prevStatus === newStatus && !closureData) return;
 
+    // 1. Construimos el objeto unificado uniendo los datos previos con el cierre (si existen)
     const updatedLead: Lead = {
       ...originalLead,
       estatus: newStatus,
-      hasPassedContactado: originalLead.hasPassedContactado || newStatus === 'CONTACTADO' || newStatus !== 'NUEVO'
+      hasPassedContactado: originalLead.hasPassedContactado || newStatus === 'CONTACTADO' || newStatus !== 'NUEVO',
+      ...(closureData || {}) // Inyecta de forma dinámica: valorEstimado, numFactura, fechaVenta y motivoCierre
     };
 
+    // 2. Actualización optimista de la interfaz visual de inmediato
     setLeads(prev => prev.map(l => l.id === leadId ? updatedLead : l));
     setUpdatingLeadIds(prev => [...prev, leadId]);
 
-    if (newStatus.toLowerCase().includes('cerrado')) {
+    // 3. Animación de celebración si cerramos una venta exitosa
+    if (newStatus === 'CERRADO_VENTA' || newStatus.toLowerCase().includes('cerrado')) {
       setShowCelebration(true);
       setTimeout(() => setShowCelebration(false), 3000);
     }
 
-    const webhookPromise = sendWebhookStatusChange(updatedLead, prevStatus);
+    // 4. Disparamos la petición HTTP PUT real a tu backend en Easypanel
+    try {
+      const response = await fetch(`/api/leads/${leadId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedLead)
+      });
 
-    let sheetsSuccess = true;
-    let sheetsErrorMsg = '';
+      if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
 
-    if (token && spreadsheetId) {
-      try {
-        const parsedId = parseSpreadsheetIdInput(spreadsheetId);
-        await updateLeadInSheet(token, parsedId, sheetTitle || 'Sheet1', updatedLead);
-        showToast(`Sincronizado: "${originalLead.nombre}" pasó de "${prevStatus}" a "${newStatus}" en Google Sheets.`, 'success');
-      } catch (error: any) {
-        console.error(error);
-        sheetsSuccess = false;
-        sheetsErrorMsg = error.message || 'Error al actualizar celda en Sheets.';
-        showToast(`Error al sincronizar con Google Sheets: ${sheetsErrorMsg}`, 'error');
-      }
-    } else {
-      showToast(`Fase de "${originalLead.nombre}" cambiada a "${newStatus}" (Guardado en Memoria).`, 'info');
+      showToast(`¡Excelente! "${originalLead.nombre}" actualizado con éxito en MySQL.`, 'success');
+
+      // 5. Mantenemos tu integración con n8n en paralelo de fondo
+      sendWebhookStatusChange(updatedLead, prevStatus).then((val) => {
+        const newLog: WebhookLog = {
+          id: Math.random().toString(),
+          timestamp: new Date().toISOString(),
+          leadId,
+          leadNombre: originalLead.nombre,
+          prevStatus,
+          newStatus,
+          url: 'MySQL & n8n Webhook',
+          status: val.success ? 'SUCCESS' : 'ERROR',
+          responseMessage: `Sincronizado MySQL | n8n: ${val.message}`
+        };
+        setWebhookLogs(prev => [newLog, ...prev]);
+      });
+
+    } catch (error: any) {
+      console.error('Error al actualizar el lead en backend:', error);
+      showToast('Error de comunicación: No se pudo guardar en la base de datos.', 'error');
+    } finally {
+      setUpdatingLeadIds(prev => prev.filter(id => id !== leadId));
     }
-
-    const val = await webhookPromise;
-    setUpdatingLeadIds(prev => prev.filter(id => id !== leadId));
-
-    const newLog: WebhookLog = {
-      id: Math.random().toString(),
-      timestamp: new Date().toISOString(),
-      leadId,
-      leadNombre: originalLead.nombre,
-      prevStatus,
-      newStatus,
-      url: token && spreadsheetId ? 'Google Sheets & n8n' : 'n8n Webhook',
-      status: (val.success && sheetsSuccess) ? 'SUCCESS' : 'ERROR',
-      responseMessage: `n8n: ${val.message}` + (token && spreadsheetId ? ` | Sheets: ${sheetsSuccess ? 'OK' : sheetsErrorMsg}` : '')
-    };
-    setWebhookLogs(prev => [newLog, ...prev]);
   };
 
   // Add Dynamic Column
