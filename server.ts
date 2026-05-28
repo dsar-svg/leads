@@ -10,10 +10,9 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // DB Connection Pool
+  // DB Connection Pool - Conectado a tu base de datos de producción
   let pool: any = null;
-  // Use a fallback if DATABASE_URL is missing to prevent crash, but log it
-  const dbUrl = process.env.DATABASE_URL || "mysql://root:password@127.0.0.1:3306/nombre_de_tu_db";
+  const dbUrl = process.env.DATABASE_URL || "mysql://supricomdev:Supricom2015%40@dashboard_database:3306/supricom_panel";
   try {
     pool = mysql.createPool(dbUrl);
     console.log("Database pool initialized successfully");
@@ -23,13 +22,7 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Helper to check DB
-  const getPool = () => {
-    if (!pool) throw new Error("Database not configured");
-    return pool;
-  };
-
-  // API Route Example
+  // API para verificar la salud del backend
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
   });
@@ -46,73 +39,130 @@ async function startServer() {
     }
   });
 
-  // Example: API to get leads
+  // 1. OBTENER LEADS (Se eliminó 'fechaIngreso' y se adaptó a la estructura exacta en snake_case)
   app.get("/api/leads", async (req, res) => {
     if (!pool) {
       return res.status(503).json({ error: "Database not available" });
     }
     try {
-      const [rows] = await pool.query(`
+      const [rows]: any = await pool.query(`
         SELECT leads.*, sellers.name as seller_name 
         FROM leads 
         LEFT JOIN sellers ON leads.seller_id = sellers.id 
-        ORDER BY fechaIngreso DESC
+        ORDER BY leads.created_at DESC
       `);
-      res.json(rows);
+
+      // Mapeo simétrico para traducir lo que tiene MySQL al formato que espera React
+      const mappedLeads = rows.map((lead: any) => ({
+        id: lead.id.toString(), // Convertimos el entero de MySQL a string para el drag and drop del Front
+        fechaIngreso: lead.fecha_income || lead.created_at, // Usa el campo por defecto de creación
+        nombre: lead.nombre_contacto || lead.name,
+        empresa: lead.name,
+        rif: lead.rif,
+        telefono: lead.telefono,
+        ubicacionEstado: lead.ubicacion_estado,
+        ubicacionDetalle: lead.ubicacion_detail,
+        categoriaInteres: lead.categoria_interes,
+        canalOrigen: lead.canal_origen,
+        campana: lead.campana,
+        vendedor: lead.seller_name || 'Sin Asignar',
+        seller_id: lead.seller_id,
+        estatus: lead.status, // Corrige la discrepancia: lee 'status' en la BD y lo entrega como 'estatus' al Front
+        notas: lead.observaciones_vendedor,
+        valorEstimado: Number(lead.monto_cerrado_usd || 0),
+        numFactura: lead.num_factura,
+        fechaVenta: lead.fecha_venta,
+        motivoCierre: lead.motivo_cierre // Nueva columna unificada en tu tabla leads
+      }));
+
+      res.json(mappedLeads);
     } catch (error) {
-      console.error(error);
+      console.error("Error en SELECT de leads:", error);
       res.status(500).json({ error: "Failed to fetch leads" });
     }
   });
 
-  // Create lead
+  // 2. CREAR LEAD (Se eliminó el parámetro 'id' manual para delegar todo al AUTO_INCREMENT de tu base de datos)
   app.post("/api/leads", async (req, res) => {
     if (!pool) return res.status(503).json({ error: "Database not available" });
     const lead = req.body;
     try {
-      const [result] = await pool.query(
-        "INSERT INTO leads (id, name, nombre_contacto, rif, telefono, ubicacion_estado, ubicacion_detail, categoria_interes, especialidad_tienda, canal_origen, campana, seller_id, status, whatsapp_link, observaciones_vendedor, monto_cerrado_usd, num_factura, fecha_venta, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())",
-        [lead.id, lead.name, lead.nombre_contacto, lead.rif, lead.telefono, lead.ubicacion_estado, lead.ubicacion_detail, lead.categoria_interes, lead.especialidad_tienda, lead.canal_origen, lead.campana, lead.seller_id, lead.status, lead.whatsapp_link, lead.observaciones_vendedor, lead.monto_cerrado_usd, lead.num_factura, lead.fecha_venta]
+      const [result]: any = await pool.query(
+        `INSERT INTO leads (
+          name, nombre_contacto, rif, telefono, ubicacion_estado, ubicacion_detail, 
+          categoria_interes, canal_origen, campana, seller_id, 
+          status, observaciones_vendedor, monto_cerrado_usd, num_factura, 
+          fecha_venta, motivo_cierre, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+        [
+          lead.empresa || lead.name, 
+          lead.nombre, 
+          lead.rif, 
+          lead.telefono, 
+          lead.ubicacionEstado, 
+          lead.ubicacionDetalle, 
+          lead.categoriaInteres, 
+          lead.canalOrigen, 
+          lead.campana, 
+          lead.seller_id || null, 
+          lead.estatus || 'NUEVO', 
+          lead.notas, 
+          Number(lead.valorEstimado || 0), 
+          lead.numFactura, 
+          lead.fechaVenta || null,
+          lead.motivoCierre || null
+        ]
       );
-      res.status(201).json({ id: lead.id });
+      // Retornamos el ID real autogenerado por MySQL convertido a texto
+      res.status(201).json({ id: result.insertId.toString() });
     } catch (error) {
-      console.error(error);
+      console.error("Error creando lead:", error);
       res.status(500).json({ error: "Failed to create lead" });
     }
   });
 
-  // Update lead
+  // 3. ACTUALIZAR LEAD (Adaptado a tus columnas nativas y añadiendo la unificación del motivo de cierre)
   app.put("/api/leads/:id", async (req, res) => {
     if (!pool) return res.status(503).json({ error: "Database not available" });
     const { id } = req.params;
     const lead = req.body;
     try {
-      // 1. Get old status to track history
+      // Obtener el status viejo de la base de datos para registrar el historial
       const [oldLeadRows]: any = await pool.query("SELECT status FROM leads WHERE id=?", [id]);
       const oldStatus = oldLeadRows.length > 0 ? oldLeadRows[0].status : null;
 
-      // 2. Perform update
+      // Actualización directa usando los nombres de columna en snake_case
       await pool.query(
-        "UPDATE leads SET name=?, nombre_contacto=?, rif=?, telefono=?, ubicacion_estado=?, ubicacion_detail=?, categoria_interes=?, especialidad_tienda=?, canal_origen=?, campana=?, seller_id=?, status=?, whatsapp_link=?, observaciones_vendedor=?, monto_cerrado_usd=?, num_factura=?, fecha_venta=?, updated_at=NOW() WHERE id=?",
-        [lead.name, lead.nombre_contacto, lead.rif, lead.telefono, lead.ubicacion_estado, lead.ubicacion_detail, lead.categoria_interes, lead.especialidad_tienda, lead.canal_origen, lead.campana, lead.seller_id, lead.status, lead.whatsapp_link, lead.observaciones_vendedor, lead.monto_cerrado_usd, lead.num_factura, lead.fecha_venta, id]
+        `UPDATE leads SET 
+          name=?, nombre_contacto=?, rif=?, telefono=?, ubicacion_estado=?, ubicacion_detail=?, 
+          categoria_interes=?, canal_origen=?, campana=?, seller_id=?, 
+          status=?, observaciones_vendedor=?, monto_cerrado_usd=?, 
+          num_factura=?, fecha_venta=?, motivo_cierre=?, updated_at=NOW() 
+        WHERE id=?`,
+        [
+          lead.empresa || lead.nombre, lead.nombre, lead.rif, lead.telefono, lead.ubicacionEstado, lead.ubicacionDetalle, 
+          lead.categoriaInteres, lead.canalOrigen, lead.campana, lead.seller_id || null, 
+          lead.estatus || 'NUEVO', lead.notas, Number(lead.valorEstimado || 0), 
+          lead.numFactura, lead.fechaVenta || null, lead.motivoCierre || null, id
+        ]
       );
 
-      // 3. Log history if status changed
-      if (oldStatus !== lead.status) {
+      // Log en historial_fases si cambió la etapa comercial
+      if (oldStatus !== lead.estatus && lead.estatus) {
         await pool.query(
           "INSERT INTO historial_fases (id_lead, fase_anterior, fase_nueva, fecha_cambio, usuario_cambio) VALUES (?, ?, ?, NOW(), ?)",
-          [id, oldStatus, lead.status, lead.updated_by || 'system']
+          [id, oldStatus, lead.estatus, lead.updated_by || 'Sistema Automatizado']
         );
       }
 
       res.json({ success: true });
     } catch (error) {
-      console.error(error);
+      console.error("Error actualizando lead:", error);
       res.status(500).json({ error: "Failed to update lead" });
     }
   });
 
-  // KPI Endpoint
+  // 4. METRICAS Y KPIS GENERALES (Consolidando directo desde la tabla leads)
   app.get("/api/kpis", async (req, res) => {
     if (!pool) return res.status(503).json({ error: "Database not available" });
     try {
@@ -131,11 +181,11 @@ async function startServer() {
     }
   });
 
-  // Sellers Endpoint
+  // 5. OBTENER VENDEDORES ACTIVOS (Filtra de acuerdo a tu columna 'activo' de phpMyAdmin)
   app.get("/api/sellers", async (req, res) => {
     if (!pool) return res.status(503).json({ error: "Database not available" });
     try {
-      const [rows] = await pool.query("SELECT * FROM sellers");
+      const [rows] = await pool.query("SELECT * FROM sellers WHERE activo = 1");
       res.json(rows);
     } catch (error) {
       console.error(error);
@@ -143,7 +193,7 @@ async function startServer() {
     }
   });
 
-  // Delete lead
+  // 6. ELIMINAR LEAD DEL REGISTRO
   app.delete("/api/leads/:id", async (req, res) => {
     if (!pool) return res.status(503).json({ error: "Database not available" });
     const { id } = req.params;
@@ -156,7 +206,7 @@ async function startServer() {
     }
   });
 
-  // Vite middleware for development vs static build for production
+  // Servidor de recursos estáticos procesados en producción por Vite (Nixpacks)
   if (process.env.NODE_ENV === "development") {
     console.log("Running in DEVELOPMENT mode with Vite Middleware");
     const vite = await createViteServer({
@@ -166,14 +216,8 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     console.log("Running in PRODUCTION mode serving static files");
-    
-    // Forzamos la ruta absoluta al directorio dist real dentro del contenedor
     const distPath = "/app/dist";
-    
-    // 1. Servir los recursos empaquetados por Vite (.js, .css) con máxima prioridad
     app.use(express.static(distPath, { index: false }));
-    
-    // 2. Ruta comodín para peticiones web: entregar siempre el index.html de producción
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'), (err) => {
         if (err) {
