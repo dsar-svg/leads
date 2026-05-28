@@ -45,12 +45,15 @@ async function startServer() {
       return res.status(503).json({ error: "Database not available" });
     }
     try {
-      const [rows]: any = await pool.query(`
-        SELECT leads.*, sellers.name as seller_name 
-        FROM leads 
-        LEFT JOIN sellers ON leads.seller_id = sellers.id 
-        ORDER BY leads.created_at DESC
-      `);
+        const [rows]: any = await pool.query(`
+          SELECT 
+            leads.*, 
+            sellers.name as seller_name,
+            tiempo_primer_contacto_minutos 
+          FROM leads 
+          LEFT JOIN sellers ON leads.seller_id = sellers.id 
+          ORDER BY leads.created_at DESC
+        `);
 
       // Mapeo simétrico para traducir lo que tiene MySQL al formato que espera React
       const mappedLeads = rows.map((lead: any) => ({
@@ -67,12 +70,13 @@ async function startServer() {
         campana: lead.campana,
         vendedor: lead.seller_name || 'Sin Asignar',
         seller_id: lead.seller_id,
-        estatus: lead.status, // Corrige la discrepancia: lee 'status' en la BD y lo entrega como 'estatus' al Front
+        estatus: lead.status === 'CERRADO' ? 'CERRADO_VENTA' : lead.status, // Normalizamos el estatus aquí mismo
         notas: lead.observaciones_vendedor,
         valorEstimado: Number(lead.monto_cerrado_usd || 0),
         numFactura: lead.num_factura,
         fechaVenta: lead.fecha_venta,
-        motivoCierre: lead.motivo_cierre // Nueva columna unificada en tu tabla leads
+        motivoCierre: lead.motivo_cierre, // <--- Coma agregada
+        tiempoPrimerContacto: lead.tiempo_primer_contacto_minutos
       }));
 
       res.json(mappedLeads);
