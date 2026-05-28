@@ -177,6 +177,7 @@ export default function App() {
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             onSellersUpdate={setSellers}
+            sellers={sellers}
           />
         </main>
 
