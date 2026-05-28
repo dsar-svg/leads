@@ -97,6 +97,7 @@ interface KanbanBoardProps {
   activeTab?: 'board' | 'closed' | 'stats' | 'settings';
   setActiveTab?: (tab: 'board' | 'closed' | 'stats' | 'settings') => void;
   onSellersUpdate?: (sellers: string[]) => void;
+  sellers: any[];
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -725,16 +726,23 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               <div className="flex items-center gap-2 mt-3">
                 <span className="text-xs font-bold text-zinc-500 uppercase">Filtrar por vendedor:</span>
                 <select 
-                  value={selectedVendorStatsFilter} 
-                  onChange={(e) => setSelectedVendorStatsFilter(e.target.value)} 
-                  className="tu-clase-css"
-                >
-                  <option value="Todos">Todos</option>
-                  {/* Ahora esto SÍ tendrá datos */}
-                  {Array.isArray(sellers) && sellers.map((s: any) => (
-                    <option key={s.id} value={s.name}>{s.name}</option>
-                  ))}
-                </select>
+                value={selectedVendorStatsFilter} // Asegúrate de que este estado exista
+                onChange={(e) => setSelectedVendorStatsFilter(e.target.value)} 
+                className="p-1 border rounded text-xs"
+              >
+                <option value="Todos">Todos</option>
+                
+                {/* Aquí usamos la prop 'sellers' que acabas de recibir */}
+                {Array.isArray(sellers) && sellers.length > 0 ? (
+                  sellers.map((s: any) => (
+                    <option key={s.id} value={s.name}>
+                      {s.name}
+                    </option>
+                  ))
+                ) : (
+                  <option disabled>Sin vendedores</option>
+                )}
+              </select>
               </div>
             ) : (
               /* Si es VENDEDOR: Oculta el selector y fuerza que el filtro sea exclusivamente SU NOMBRE */
