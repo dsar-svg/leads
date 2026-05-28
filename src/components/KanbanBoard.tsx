@@ -148,7 +148,25 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [updatingLeadIds, setUpdatingLeadIds] = useState<string[]>([]);
   const [activeLead, setActiveLead] = useState<any>(null);
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
-
+  const sellersPerformance = React.useMemo(() => {
+  return sellers.map((seller) => {
+    const vName = seller.name || "Sin Asignar";
+    const vLeads = leads.filter((l) => (l.seller_name || '').trim().toLowerCase() === vName.toLowerCase());
+    
+    const vActive = vLeads.filter((l) => l.estatus !== 'CERRADO_VENTA' && l.estatus !== 'CERRADO_ABANDONADO' && l.estatus !== 'CERRADO').length;
+    const vWon = vLeads.filter((l) => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').length;
+    const vLost = vLeads.filter((l) => l.estatus === 'CERRADO_ABANDONADO').length;
+    const totalClosed = vWon + vLost;
+    const vRate = totalClosed > 0 ? Math.round((vWon / totalClosed) * 100) : 0;
+    const vRev = vLeads.filter((l) => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
+    
+    const vClosedWithDates = vLeads.filter((l) => (l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO' || l.estatus === 'CERRADO_ABANDONADO') && l.fechaIngreso && l.fechaVenta);
+    const vTotalClosureDays = vClosedWithDates.reduce((sum, l) => sum + Math.round((new Date(l.fechaVenta).getTime() - new Date(l.fechaIngreso).getTime()) / (1000 * 60 * 60 * 24)), 0);
+    const vAverageClosureTime = vClosedWithDates.length > 0 ? Math.round(vTotalClosureDays / vClosedWithDates.length) : 0;
+    
+    return { vName, total: vLeads.length, vActive, vWon, vLost, vRate, vRev, vAverageClosureTime };
+  }).sort((a, b) => b.vRev - a.vRev);
+}, [sellers, leads]);
  
 
 
@@ -697,48 +715,40 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       )}
 
       {activeTab === 'closed' && (
-        <div className="bg-white rounded-2xl border border-zinc-200/80 p-5 space-y-4 shadow-xs">
-          <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2"><Archive className="w-5 h-5 text-zinc-500" /> Historial de Leads Cerrados</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="border-b text-zinc-450 uppercase font-bold tracking-wider text-[10px] bg-zinc-50">
-                  <th className="p-3">Nombre Contacto</th>
-                  <th className="p-3">Empresa</th>
-                  <th className="p-3">Vendedor</th>
-                  <th className="p-3">Motivo de Cierre</th>
-                  <th className="p-3">Fecha Cierre</th>
-                  <th className="p-3 text-right">Monto Cerrado</th>
-                  <th className="p-3">No Factura</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-100">
-  {sortedSellers.map(seller => (
-    <tr key={seller.vName} className="hover:bg-zinc-50/45 transition-colors text-zinc-700">
-      <td className="p-3 font-bold text-zinc-900 flex items-center gap-1.5">
-        <User className="w-3.5 h-3.5 text-zinc-400" />
-        {seller.vName} 
-      </td>
-      <td className="p-3 font-semibold">{seller.total}</td>
-      <td className="p-3 font-medium text-zinc-500">{seller.vActive}</td>
-      <td className="p-3 font-bold text-emerald-700">{seller.vWon}</td>
-      <td className="p-3 text-zinc-400">{seller.vLost}</td>
-      <td className="p-3 text-right font-bold text-zinc-800">${seller.vRev.toLocaleString()}</td>
-      <td className="p-3 text-center">
-        <span className="px-2 py-0.5 bg-zinc-100 rounded text-zinc-800 font-bold font-mono">
-          {seller.vRate}%
-        </span>
-      </td>
-      <td className="p-3 text-center font-semibold text-zinc-600">
-        {seller.vAverageClosureTime > 0 ? `${seller.vAverageClosureTime} días` : '—'}
-      </td>
-    </tr>
-  ))}
-</tbody>
-            </table>
-          </div>
-        </div>
-      )}
+  <div className="bg-white rounded-2xl border border-zinc-200/80 p-5 space-y-4 shadow-xs">
+    <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2"><Archive className="w-5 h-5 text-zinc-500" /> Historial de Rendimiento</h2>
+    <div className="overflow-x-auto">
+      <table className="w-full text-left border-collapse text-xs">
+        <thead>
+          <tr className="border-b text-zinc-450 uppercase font-bold tracking-wider text-[10px] bg-zinc-50">
+            <th className="p-3">Vendedor</th>
+            <th className="p-3">Total Leads</th>
+            <th className="p-3">Activos</th>
+            <th className="p-3 text-emerald-700">Ganados</th>
+            <th className="p-3 text-zinc-400">Perdidos</th>
+            <th className="p-3 text-right">Recaudado</th>
+            <th className="p-3 text-center">Tasa</th>
+            <th className="p-3 text-center">Avg. Cierre</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-zinc-100">
+          {sellersPerformance.map(seller => (
+            <tr key={seller.vName} className="hover:bg-zinc-50/45 transition-colors text-zinc-700">
+              <td className="p-3 font-bold text-zinc-900">{seller.vName}</td>
+              <td className="p-3 font-semibold">{seller.total}</td>
+              <td className="p-3 font-medium text-zinc-500">{seller.vActive}</td>
+              <td className="p-3 font-bold text-emerald-700">{seller.vWon}</td>
+              <td className="p-3 text-zinc-400">{seller.vLost}</td>
+              <td className="p-3 text-right font-bold text-zinc-800">${seller.vRev.toLocaleString()}</td>
+              <td className="p-3 text-center"><span className="px-2 py-0.5 bg-zinc-100 rounded text-zinc-800 font-bold font-mono">{seller.vRate}%</span></td>
+              <td className="p-3 text-center font-semibold text-zinc-600">{seller.vAverageClosureTime > 0 ? `${seller.vAverageClosureTime} días` : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
 
       {/* 7. TAB 3: ESTADISTICAS Y KPIS GENERALES (PROTEGIDO POR ROL DE ACCESO) */}
       {activeTab === 'stats' && (
@@ -893,86 +903,42 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           })()}
 
           {/* Tabla General de Rendimiento Oficial por Vendedores (ESTRICTAMENTE EXCLUSIVA PARA ADMIN) */}
-          {userRole === 'ADMIN' && (
-            <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs space-y-4">
-              <div>
-                <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest font-sans">RENDIMIENTO POR VENDEDORES</h3>
-                <p className="text-[11px] text-zinc-400">Comparativa oficial de cartera y tasa de efectividad de todo el equipo comercial.</p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-zinc-100 text-zinc-400 font-bold bg-zinc-50/50">
-                      <th className="p-3">Vendedor</th>
-                      <th className="p-3">Total Asignados</th>
-                      <th className="p-3">Activos</th>
-                      <th className="p-3">Cierres con Venta</th>
-                      <th className="p-3">Cierres Abandonado</th>
-                      <th className="p-3 text-right">Recaudado USD</th>
-                      <th className="p-3 text-center">Tasa Conversión</th>
-                      <th className="p-3 text-center">Tiempo Cierre Promedio</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-100">
-                    {(() => {
-                      const sellersWithData = uniqueSellers.map(vName => {
-                        const vLeads = leads.filter(l => (l.vendedor || '').trim().toLowerCase() === vName.toLowerCase());
-                        const vActive = vLeads.filter(l => l.estatus !== 'CERRADO_VENTA' && l.estatus !== 'CERRADO_ABANDONADO' && l.estatus !== 'CERRADO').length;
-                        const vWon = vLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').length;
-                        const vLost = vLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO').length;
-                        const totalClosed = vWon + vLost;
-                        const vRate = totalClosed > 0 ? Math.round((vWon / totalClosed) * 100) : 0;
-                        const vRev = vLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
-
-                        const vClosedWithDates = vLeads.filter(l => (l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO' || l.estatus === 'CERRADO_ABANDONADO') && l.fechaIngreso && l.fechaVenta);
-                        const vTotalClosureDays = vClosedWithDates.reduce((sum, l) => sum + Math.round((new Date(l.fechaVenta).getTime() - new Date(l.fechaIngreso).getTime()) / (1000 * 60 * 60 * 24)), 0);
-                        const vAverageClosureTime = vClosedWithDates.length > 0 ? Math.round(vTotalClosureDays / vClosedWithDates.length) : 0;
-
-                        return { vName, total: vLeads.length, vActive, vWon, vLost, vRate, vRev, vAverageClosureTime };
-                      });
-
-                     const sortedSellers = [...sellers].map(seller => {
-  const vName = seller.name || "Sin Asignar";
-  const vLeads = leads.filter(l => (l.seller_name || '').trim().toLowerCase() === vName.toLowerCase());
-  
-  const vActive = vLeads.filter(l => l.estatus !== 'CERRADO_VENTA' && l.estatus !== 'CERRADO_ABANDONADO' && l.estatus !== 'CERRADO').length;
-  const vWon = vLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').length;
-  const vLost = vLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO').length;
-  const totalClosed = vWon + vLost;
-  const vRate = totalClosed > 0 ? Math.round((vWon / totalClosed) * 100) : 0;
-  const vRev = vLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
-  
-  const vClosedWithDates = vLeads.filter(l => (l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO' || l.estatus === 'CERRADO_ABANDONADO') && l.fechaIngreso && l.fechaVenta);
-  const vTotalClosureDays = vClosedWithDates.reduce((sum, l) => sum + Math.round((new Date(l.fechaVenta).getTime() - new Date(l.fechaIngreso).getTime()) / (1000 * 60 * 60 * 24)), 0);
-  const vAverageClosureTime = vClosedWithDates.length > 0 ? Math.round(vTotalClosureDays / vClosedWithDates.length) : 0;
-  
-  return { vName, total: vLeads.length, vActive, vWon, vLost, vRate, vRev, vAverageClosureTime };
-}).sort((a, b) => b.vRev - a.vRev);
-
-                      return sortedSellers.map(seller => (
-                        <tr key={seller.vName} className="hover:bg-zinc-50/45 transition-colors text-zinc-700">
-                          {/* AQUÍ ESTABA EL POSIBLE ERROR: Asegúrate de acceder al string vName */}
-                          <td className="p-3 font-bold text-zinc-900 flex items-center gap-1.5">
-                             <User className="w-3.5 h-3.5 text-zinc-400" />
-                             {seller.vName} 
-                          </td>
-                          <td className="p-3 font-semibold">{seller.total}</td>
-                          <td className="p-3 font-medium text-zinc-500">{seller.vActive}</td>
-                          <td className="p-3 font-bold text-emerald-700">{seller.vWon}</td>
-                          <td className="p-3 text-zinc-400">{seller.vLost}</td>
-                          <td className="p-3 text-right font-bold text-zinc-800">${seller.vRev.toLocaleString()}</td>
-                          <td className="p-3 text-center"><span className="px-2 py-0.5 bg-zinc-100 rounded text-zinc-800 font-bold font-mono">{seller.vRate}%</span></td>
-                          <td className="p-3 text-center font-semibold text-zinc-600">{seller.vAverageClosureTime > 0 ? `${seller.vAverageClosureTime} días` : '—'}</td>
-                        </tr>
-                      ));
-                    })()}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+        {/* Tabla de Rendimiento Oficial */}
+{userRole === 'ADMIN' && (
+  <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs space-y-4">
+    <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest">RENDIMIENTO POR VENDEDORES</h3>
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-xs border-collapse">
+        <thead>
+          <tr className="border-b border-zinc-100 text-zinc-400 font-bold bg-zinc-50/50">
+            <th className="p-3">Vendedor</th>
+            <th className="p-3">Total Asignados</th>
+            <th className="p-3">Activos</th>
+            <th className="p-3">Ganados</th>
+            <th className="p-3">Perdidos</th>
+            <th className="p-3 text-right">Recaudado</th>
+            <th className="p-3 text-center">Tasa Conversión</th>
+            <th className="p-3 text-center">Tiempo Promedio</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-zinc-100">
+          {sellersPerformance.map((seller) => (
+            <tr key={seller.vName} className="hover:bg-zinc-50/45 transition-colors text-zinc-700">
+              <td className="p-3 font-bold text-zinc-900">{seller.vName}</td>
+              <td className="p-3 font-semibold">{seller.total}</td>
+              <td className="p-3 font-medium text-zinc-500">{seller.vActive}</td>
+              <td className="p-3 font-bold text-emerald-700">{seller.vWon}</td>
+              <td className="p-3 text-zinc-400">{seller.vLost}</td>
+              <td className="p-3 text-right font-bold text-zinc-800">${seller.vRev.toLocaleString()}</td>
+              <td className="p-3 text-center"><span className="px-2 py-0.5 bg-zinc-100 rounded text-zinc-800 font-bold font-mono">{seller.vRate}%</span></td>
+              <td className="p-3 text-center font-semibold text-zinc-600">{seller.vAverageClosureTime > 0 ? `${seller.vAverageClosureTime} días` : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </div>
+)}
 
       {isClosureModalOpen && closingLead && (
         <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50">
