@@ -739,12 +739,27 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           {(() => {
             const currentFilter = userRole === 'ADMIN' ? selectedVendorStatsFilter : selectedVendedor;
             
-           const localStatsLeads = currentFilter === 'Todos' 
-            ? leads 
-            : leads.filter(l => {
-                const sellerName = sellersMap[l.seller_id?.toString()] || "Sin Asignar";
-                return sellerName.trim().toLowerCase() === currentFilter.trim().toLowerCase();
-              });
+           const localStatsLeads = React.useMemo(() => {
+  // Si no hay leads, devolvemos array vacío
+  if (!leads || leads.length === 0) return [];
+  
+  // Si el filtro es 'Todos', devolvemos todo
+  if (currentFilter === 'Todos') return leads;
+
+  return leads.filter(l => {
+    // Convertimos ambos a string para asegurar comparación exacta
+    const lId = l.seller_id ? l.seller_id.toString() : 'sin_id';
+    
+    // Obtenemos el nombre del mapa (o el ID si no lo encuentra, para depurar)
+    const sellerName = sellersMap[lId] || "Sin Asignar";
+    
+    // Normalizamos ambos lados
+    const nameFormatted = sellerName.toString().trim().toLowerCase();
+    const filterFormatted = currentFilter.toString().trim().toLowerCase();
+    
+    return nameFormatted === filterFormatted;
+  });
+}, [leads, currentFilter, sellersMap]);
 
             const localStatsClosedLeads = localStatsLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO' || l.estatus === 'CERRADO_ABANDONADO');
             const localTotalClosedSalesValue = localStatsClosedLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
