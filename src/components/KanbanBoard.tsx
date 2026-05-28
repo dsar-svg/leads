@@ -147,6 +147,30 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [activeLead, setActiveLead] = useState<any>(null);
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
 
+    // ... (cerca de la línea 130)
+  const [leads, setLeads] = useState<any[]>([]);
+  const [updatingLeadIds, setUpdatingLeadIds] = useState<string[]>([]);
+  
+  // AGREGA AQUÍ ESTOS DOS BLOQUES:
+  const [sellers, setSellers] = useState<any[]>([]);
+  
+  useEffect(() => {
+    fetch('/api/sellers')
+      .then(res => res.json())
+      .then(data => setSellers(data))
+      .catch(err => console.error("Error cargando vendedores:", err));
+  }, []);
+  
+
+    // AGREGA ESTO AQUÍ:
+  const sellersMap = React.useMemo(() => {
+    const map: Record<string, string> = {};
+    sellers.forEach(s => {
+      map[s.id.toString()] = s.nombre; 
+    });
+    return map;
+  }, [sellers]);
+
   // Fetch fresco desde la Base de Datos unificada MySQL
   const fetchLeadsFromDB = async () => {
     try {
@@ -691,10 +715,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 <select 
                   value={selectedVendorStatsFilter} 
                   onChange={(e) => setSelectedVendorStatsFilter(e.target.value)} 
-                  className="px-3 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg text-zinc-700 font-semibold focus:outline-none"
+                  className="..."
                 >
                   <option value="Todos">Todos</option>
-                  {uniqueSellers.map(seller => <option key={seller} value={seller}>{seller}</option>)}
+                  {/* REEMPLAZA EL MAPEO VIEJO POR ESTE: */}
+                  {Object.values(sellersMap).map(name => (
+                    <option key={name} value={name}>{name}</option>
+                  ))}
                 </select>
               </div>
             ) : (
@@ -716,8 +743,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             const currentFilter = userRole === 'ADMIN' ? selectedVendorStatsFilter : selectedVendedor;
             
            const localStatsLeads = currentFilter === 'Todos' 
-              ? leads 
-              : leads.filter(l => (l.vendedor || '').trim().toLowerCase() === currentFilter.trim().toLowerCase());
+            ? leads 
+            : leads.filter(l => {
+                const sellerName = sellersMap[l.seller_id?.toString()] || "Sin Asignar";
+                return sellerName.trim().toLowerCase() === currentFilter.trim().toLowerCase();
+              });
 
             const localStatsClosedLeads = localStatsLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO' || l.estatus === 'CERRADO_ABANDONADO');
             const localTotalClosedSalesValue = localStatsClosedLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
