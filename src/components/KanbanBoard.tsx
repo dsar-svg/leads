@@ -486,12 +486,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const uniqueSellers: string[] = Array.from(new Set(leads.map(l => (l.vendedor || '').trim()).filter(Boolean)));
 
   const roleFilteredLeads = leads.filter(lead => {
-    if (userRole === 'ADMIN') {
-      if (adminVendedorFilter === 'todos') return true;
-      return (lead.vendedor || '').trim().toLowerCase() === adminVendedorFilter.toLowerCase();
-    }
-    return (lead.vendedor || '').trim().toLowerCase() === selectedVendedor.trim().toLowerCase();
-  });
+  if (userRole === 'ADMIN') {
+    if (adminVendedorFilter === 'todos') return true;
+    
+    // Aquí es donde sucede la magia: comparamos el nombre que viene del JOIN
+    return (lead.seller_name || '').trim().toLowerCase() === adminVendedorFilter.toLowerCase();
+  }
+  
+  // Para usuarios normales, si quieres filtrar por su nombre:
+  return (lead.seller_name || '').trim().toLowerCase() === selectedVendedor.trim().toLowerCase();
+});
 
   const filteredLeads = roleFilteredLeads.filter(lead => {
     const query = searchQuery.toLowerCase();
