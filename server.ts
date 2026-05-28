@@ -199,15 +199,14 @@ async function startServer() {
 
   // 5. OBTENER VENDEDORES ACTIVOS (Filtra de acuerdo a tu columna 'activo' de phpMyAdmin)
   app.get("/api/sellers", async (req, res) => {
-    if (!pool) return res.status(503).json({ error: "Database not available" });
     try {
-      const [rows] = await pool.query("SELECT * FROM sellers WHERE activo = 1");
-      res.json(rows);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Failed to fetch sellers" });
-    }
-  });
+    const [rows] = await pool.query("SELECT * FROM sellers"); // Cambia esto si tu tabla se llama distinto
+    res.json(rows);
+  } catch (error) {
+    console.error("Error en SQL:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
 
   // 6. ELIMINAR LEAD DEL REGISTRO
   app.delete("/api/leads/:id", async (req, res) => {
