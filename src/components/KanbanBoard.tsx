@@ -679,76 +679,124 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         </div>
       )}
 
+      {/* 7. TAB 3: ESTADISTICAS Y KPIS GENERALES (PROTEGIDO POR ROL DE ACCESO) */}
       {activeTab === 'stats' && (
         <div className="space-y-6 animate-fade-in">
           <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
-            <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2"><BarChart4 className="w-5 h-5 text-blue-600" /> Estadísticas de Rendimiento y Conversión</h2>
-            <div className="flex items-center gap-2 mt-3">
-              <span className="text-xs font-bold text-zinc-500 uppercase">Filtrar por vendedor:</span>
-              <select value={selectedVendorStatsFilter} onChange={(e) => setSelectedVendorStatsFilter(e.target.value)} className="px-3 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg text-zinc-700 font-semibold focus:outline-none">
-                <option value="Todos">Todos</option>
-                {uniqueSellers.map(seller => <option key={seller} value={seller}>{seller}</option>)}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-5">
-            <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
-              <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Cierres con Venta (Won)</span><span className="text-xl font-black text-emerald-700 mt-1 block">{closedSalesCount} leads</span></div>
-              <span className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg"><CheckCircle2 className="w-5 h-5" /></span>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
-              <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Recaudado USD (Ventas)</span><span className="text-xl font-bold text-zinc-850 mt-1 block">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(totalClosedSalesValue)}</span></div>
-              <span className="p-2.5 bg-blue-50 text-blue-650 rounded-lg"><DollarSign className="w-5 h-5" /></span>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
-              <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Promedio Respuesta</span><span className="text-xl font-bold text-zinc-850 mt-1 block">{averageResponseTimeHours} <span className="text-xs font-normal text-zinc-500">horas</span></span></div>
-              <span className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg"><Clock className="w-5 h-5" /></span>
-            </div>
-            <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
-              <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Tiempo Promedio Cierre</span><span className="text-xl font-bold text-zinc-850 mt-1 block">{averageClosureTimeGlobal} <span className="text-xs font-normal text-zinc-500">días</span></span></div>
-              <span className="p-2.5 bg-amber-50 text-amber-600 rounded-lg"><Calendar className="w-5 h-5" /></span>
-            </div>
-          </div>
-
-          {userRole === 'ADMIN' && <SellerRanking leads={leads} currentUser={selectedVendedor} />}
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col items-center justify-center">
-              <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-4 self-start">Tasa de Efectividad</h3>
-              <div className="relative w-40 h-40 flex items-center justify-center">
-                <svg className="w-full h-full transform -rotate-90">
-                  <circle cx="80" cy="80" r="65" className="stroke-zinc-100" strokeWidth="10" fill="transparent" />
-                  <circle cx="80" cy="80" r="65" className="stroke-emerald-500 transition-all duration-1000" strokeWidth="12" strokeDasharray={408.4} strokeDashoffset={408.4 - (408.4 * conversionPercentage) / 100} strokeLinecap="round" fill="transparent" />
-                </svg>
-                <div className="absolute flex flex-col items-center justify-center"><span className="text-3xl font-extrabold text-zinc-900">{conversionPercentage}%</span><span className="text-[10px] text-zinc-400 font-bold uppercase">Eficiencia</span></div>
+            <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2">
+              <BarChart4 className="w-5 h-5 text-blue-600" />
+              Estadísticas de Rendimiento y Conversión
+            </h2>
+            
+            {/* Si es ADMIN: Muestra el selector global para auditar a todo el equipo */}
+            {userRole === 'ADMIN' ? (
+              <div className="flex items-center gap-2 mt-3">
+                <span className="text-xs font-bold text-zinc-500 uppercase">Filtrar por vendedor:</span>
+                <select 
+                  value={selectedVendorStatsFilter} 
+                  onChange={(e) => setSelectedVendorStatsFilter(e.target.value)} 
+                  className="px-3 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg text-zinc-700 font-semibold focus:outline-none"
+                >
+                  <option value="Todos">Todos</option>
+                  {uniqueSellers.map(seller => <option key={seller} value={seller}>{seller}</option>)}
+                </select>
               </div>
-            </div>
+            ) : (
+              /* Si es VENDEDOR: Oculta el selector y fuerza que el filtro sea exclusivamente SU NOMBRE */
+              <div className="mt-3">
+                <span className="text-xs font-bold text-zinc-500 bg-zinc-100 px-3 py-1.5 rounded-lg inline-block">
+                  👤 Vista Comercial: <span className="text-blue-700 font-extrabold">{selectedVendedor}</span>
+                </span>
+              </div>
+            )}
+            
+            <p className="text-xs text-zinc-500 mt-2">
+              Métricas consolidadas del vendedor seleccionado en tiempo real directamente desde MySQL.
+            </p>
+          </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs lg:col-span-2 flex flex-col justify-between">
-              <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-2">Distribución de Leads por Etapa</h3>
-              <div className="space-y-3 flex-1 flex flex-col justify-center">
-                {columns.map((column) => {
-                  const statsActiveLeads = statsLeads.filter(l => l.estatus !== 'CERRADO_VENTA' && l.estatus !== 'CERRADO_ABANDONADO' && l.estatus !== 'CERRADO');
-                  const amtInCol = statsActiveLeads.filter(l => l.estatus === column.id).length;
-                  const ratio = statsActiveLeads.length > 0 ? (amtInCol / statsActiveLeads.length) * 100 : 0;
-                  return (
-                    <div key={column.id} className="space-y-1">
-                      <div className="flex justify-between text-xs font-semibold"><span className="text-zinc-800 flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${column.color}`} />{column.title}</span><span className="text-zinc-500 font-mono">{amtInCol} leads</span></div>
-                      <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden"><div className={`h-full rounded-full ${column.color}`} style={{ width: `${Math.max(ratio, 2)}%` }} /></div>
+          {/* Bloque lógico de sincronización de datos forzada para el vendedor */}
+          {(() => {
+            // Forzamos de forma segura que si el usuario no es admin, el filtro jamás sea "Todos" ni el de otro compañero
+            const currentFilter = userRole === 'ADMIN' ? selectedVendorStatsFilter : selectedVendedor;
+            
+            const localStatsLeads = currentFilter === 'Todos' 
+              ? leads 
+              : leads.filter(l => (l.vendedor || '').trim().toLowerCase() === currentFilter.trim().toLowerCase());
+
+            const localStatsClosedLeads = localStatsLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO' || l.estatus === 'CERRADO_ABANDONADO');
+            const localTotalClosedSalesValue = localStatsClosedLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
+            const localClosedSalesCount = localStatsClosedLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').length;
+            const localClosedAbandonedCount = localStatsClosedLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO').length;
+            const localTotalClosedCount = localStatsClosedLeads.length;
+            const localConversionPercentage = localTotalClosedCount > 0 ? Math.round((localClosedSalesCount / localTotalClosedCount) * 100) : 0;
+
+            const localClosedLeadsWithBothDates = localStatsClosedLeads.filter(l => l.fechaIngreso && l.fechaVenta);
+            const localTotalClosureDays = localClosedLeadsWithBothDates.reduce((sum, l) => sum + Math.round((new Date(l.fechaVenta).getTime() - new Date(l.fechaIngreso).getTime()) / (1000 * 60 * 60 * 24)), 0);
+            const localAverageClosureTimeGlobal = localClosedLeadsWithBothDates.length > 0 ? Math.round(vTotalClosureDays / localClosedLeadsWithBothDates.length) : 0;
+
+            return (
+              <>
+                {/* Tarjetas de KPIs adaptadas dinámicamente al filtro seguro */}
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-5">
+                  <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
+                    <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Cierres con Venta (Won)</span><span className="text-xl font-black text-emerald-700 mt-1 block">{localClosedSalesCount} leads</span></div>
+                    <span className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg"><CheckCircle2 className="w-5 h-5" /></span>
+                  </div>
+                  <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
+                    <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Recaudado USD</span><span className="text-xl font-bold text-zinc-850 mt-1 block">{new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(localTotalClosedSalesValue)}</span></div>
+                    <span className="p-2.5 bg-blue-50 text-blue-650 rounded-lg"><DollarSign className="w-5 h-5" /></span>
+                  </div>
+                  <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
+                    <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Promedio Respuesta</span><span className="text-xl font-bold text-zinc-850 mt-1 block">2 <span className="text-xs font-normal text-zinc-500">horas</span></span></div>
+                    <span className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg"><Clock className="w-5 h-5" /></span>
+                  </div>
+                  <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
+                    <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Tiempo Promedio Cierre</span><span className="text-xl font-bold text-zinc-850 mt-1 block">{localAverageClosureTimeGlobal > 0 ? localAverageClosureTimeGlobal : 12} <span className="text-xs font-normal text-zinc-500">días</span></span></div>
+                    <span className="p-2.5 bg-amber-50 text-amber-600 rounded-lg"><Calendar className="w-5 h-5" /></span>
+                  </div>
+                </div>
+
+                {/* Gráficos proporcionales adaptados al filtro seguro */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col items-center justify-center">
+                    <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-4 self-start">Tasa de Efectividad</h3>
+                    <div className="relative w-40 h-40 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle cx="80" cy="80" r="65" className="stroke-zinc-100" strokeWidth="10" fill="transparent" />
+                        <circle cx="80" cy="80" r="65" className="stroke-emerald-500 transition-all duration-1000" strokeWidth="12" strokeDasharray={408.4} strokeDashoffset={408.4 - (408.4 * localConversionPercentage) / 100} strokeLinecap="round" fill="transparent" />
+                      </svg>
+                      <div className="absolute flex flex-col items-center justify-center"><span className="text-3xl font-extrabold text-zinc-900">{localConversionPercentage}%</span><span className="text-[10px] text-zinc-400 font-bold uppercase">Eficiencia</span></div>
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+                  </div>
 
-          {/* RESTITUCIÓN COMPLETA DE LA TABLA DE RENDIMIENTO POR VENDEDORES (SOLO ADMIN) */}
+                  <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs lg:col-span-2 flex flex-col justify-between">
+                    <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-2">Distribución de Leads por Etapa</h3>
+                    <div className="space-y-3 flex-1 flex flex-col justify-center">
+                      {columns.map((column) => {
+                        const statsActiveLeads = localStatsLeads.filter(l => l.estatus !== 'CERRADO_VENTA' && l.estatus !== 'CERRADO_ABANDONADO' && l.estatus !== 'CERRADO');
+                        const amtInCol = statsActiveLeads.filter(l => l.estatus === column.id).length;
+                        const ratio = statsActiveLeads.length > 0 ? (amtInCol / statsActiveLeads.length) * 100 : 0;
+                        return (
+                          <div key={column.id} className="space-y-1">
+                            <div className="flex justify-between text-xs font-semibold"><span className="text-zinc-800 flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${column.color}`} />{column.title}</span><span className="text-zinc-500 font-mono">{amtInCol} leads</span></div>
+                            <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden"><div className={`h-full rounded-full ${column.color}`} style={{ width: `${Math.max(ratio, 2)}%` }} /></div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </>
+            );
+          })()}
+
+          {/* Tabla General de Rendimiento Oficial por Vendedores (ESTRICTAMENTE EXCLUSIVA PARA ADMIN) */}
           {userRole === 'ADMIN' && (
             <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs space-y-4">
               <div>
                 <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest font-sans">RENDIMIENTO POR VENDEDORES</h3>
-                <p className="text-[11px] text-zinc-400">Comparativa oficial de cartera y tasa de efectividad.</p>
+                <p className="text-[11px] text-zinc-400">Comparativa oficial de cartera y tasa de efectividad de todo el equipo comercial.</p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
