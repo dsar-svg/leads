@@ -713,21 +713,28 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {closedLeads.map(lead => {
-                  const isWon = lead.estatus === 'CERRADO_VENTA' || lead.estatus === 'CERRADO';
-                  return (
-                    <tr key={lead.id} className="hover:bg-zinc-50/50">
-                      <td className="p-3 font-semibold text-zinc-900">{lead.nombre}</td>
-                      <td className="p-3 text-zinc-650">{lead.empresa}</td>
-                      <td className="p-3 text-zinc-500">{lead.vendedor}</td>
-                      <td className="p-3"><span className={`px-2 py-0.5 rounded text-[10px] font-bold ${isWon ? 'bg-emerald-50 text-emerald-700' : 'bg-zinc-100 text-zinc-500'}`}>{isWon ? 'VENTA EXITOSA' : 'ABANDONADO'}</span></td>
-                      <td className="p-3 font-mono text-zinc-500">{lead.fechaVenta || 'S/F'}</td>
-                      <td className="p-3 text-right font-bold text-zinc-800">${(lead.valorEstimado || 0).toLocaleString()}</td>
-                      <td className="p-3 font-mono text-zinc-500">{lead.numFactura || '—'}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
+  {sortedSellers.map(seller => (
+    <tr key={seller.vName} className="hover:bg-zinc-50/45 transition-colors text-zinc-700">
+      <td className="p-3 font-bold text-zinc-900 flex items-center gap-1.5">
+        <User className="w-3.5 h-3.5 text-zinc-400" />
+        {seller.vName} 
+      </td>
+      <td className="p-3 font-semibold">{seller.total}</td>
+      <td className="p-3 font-medium text-zinc-500">{seller.vActive}</td>
+      <td className="p-3 font-bold text-emerald-700">{seller.vWon}</td>
+      <td className="p-3 text-zinc-400">{seller.vLost}</td>
+      <td className="p-3 text-right font-bold text-zinc-800">${seller.vRev.toLocaleString()}</td>
+      <td className="p-3 text-center">
+        <span className="px-2 py-0.5 bg-zinc-100 rounded text-zinc-800 font-bold font-mono">
+          {seller.vRate}%
+        </span>
+      </td>
+      <td className="p-3 text-center font-semibold text-zinc-600">
+        {seller.vAverageClosureTime > 0 ? `${seller.vAverageClosureTime} días` : '—'}
+      </td>
+    </tr>
+  ))}
+</tbody>
             </table>
           </div>
         </div>
@@ -925,21 +932,24 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                       });
 
                      const sortedSellers = [...sellers].map(seller => {
-                       // Usamos el nombre del vendedor que viene del array de objetos 'sellers'
-                      const vName = seller.name || "Sin Asignar";
-                      
-                      // Filtramos los leads de este vendedor usando su ID o nombre
-                      const vLeads = leads.filter(l => (l.seller_name || '').trim().toLowerCase() === vName.toLowerCase());
-                      
-                      // ... (aquí mantienes el resto de tus cálculos de vActive, vWon, vLost, etc.)
-                      const vActive = vLeads.filter(l => l.estatus !== 'CERRADO_VENTA' && l.estatus !== 'CERRADO_ABANDONADO' && l.estatus !== 'CERRADO').length;
-                      // ... resto del código
-                      
-                      return { vName, /* ... resto de propiedades */ };
-                  }).sort((a, b) => b.vRev - a.vRev);
+  const vName = seller.name || "Sin Asignar";
+  const vLeads = leads.filter(l => (l.seller_name || '').trim().toLowerCase() === vName.toLowerCase());
+  
+  const vActive = vLeads.filter(l => l.estatus !== 'CERRADO_VENTA' && l.estatus !== 'CERRADO_ABANDONADO' && l.estatus !== 'CERRADO').length;
+  const vWon = vLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').length;
+  const vLost = vLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO').length;
+  const totalClosed = vWon + vLost;
+  const vRate = totalClosed > 0 ? Math.round((vWon / totalClosed) * 100) : 0;
+  const vRev = vLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
+  
+  const vClosedWithDates = vLeads.filter(l => (l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO' || l.estatus === 'CERRADO_ABANDONADO') && l.fechaIngreso && l.fechaVenta);
+  const vTotalClosureDays = vClosedWithDates.reduce((sum, l) => sum + Math.round((new Date(l.fechaVenta).getTime() - new Date(l.fechaIngreso).getTime()) / (1000 * 60 * 60 * 24)), 0);
+  const vAverageClosureTime = vClosedWithDates.length > 0 ? Math.round(vTotalClosureDays / vClosedWithDates.length) : 0;
+  
+  return { vName, total: vLeads.length, vActive, vWon, vLost, vRate, vRev, vAverageClosureTime };
+}).sort((a, b) => b.vRev - a.vRev);
 
                       return sortedSellers.map(seller => (
-                        sortedSellers.map(seller => (
                         <tr key={seller.vName} className="hover:bg-zinc-50/45 transition-colors text-zinc-700">
                           {/* AQUÍ ESTABA EL POSIBLE ERROR: Asegúrate de acceder al string vName */}
                           <td className="p-3 font-bold text-zinc-900 flex items-center gap-1.5">
