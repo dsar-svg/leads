@@ -758,7 +758,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const filterFormatted = currentFilter.toString().trim().toLowerCase();
     
     return nameFormatted === filterFormatted;
-  });
+  })
+    console.log("Debug Filtro:", { lId, sellerName, nameFormatted, filterFormatted });
+    ;
 }, [leads, currentFilter, sellersMap]);
 
             const localStatsClosedLeads = localStatsLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO' || l.estatus === 'CERRADO_ABANDONADO');
