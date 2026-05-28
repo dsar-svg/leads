@@ -147,11 +147,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [activeLead, setActiveLead] = useState<any>(null);
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
 
-    // ... (cerca de la línea 130)
-  const [leads, setLeads] = useState<any[]>([]);
-  const [updatingLeadIds, setUpdatingLeadIds] = useState<string[]>([]);
+ 
   
-  // AGREGA AQUÍ ESTOS DOS BLOQUES:
   const [sellers, setSellers] = useState<any[]>([]);
   
   useEffect(() => {
