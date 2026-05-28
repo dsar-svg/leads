@@ -216,11 +216,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
+  // Fetch from Database al inicializar el componente
   useEffect(() => {
-    // Load default mock data
-    setLeads(INITIAL_LEADS);
-    // Optionally fetch from DB in background if needed later
-    // fetchLeadsFromDB();
+    // 1. Intentamos traer los leads reales de la base de datos MySQL
+    fetchLeadsFromDB();
   }, []);
 
   useEffect(() => {
