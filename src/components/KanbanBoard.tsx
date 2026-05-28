@@ -157,18 +157,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [localSellers, setLocalSellers] = useState<any[]>(sellers);
 
   useEffect(() => {
-    fetch('/api/sellers')
-      .then(res => {
-      // Si la respuesta no es OK, lanza un error para que el .catch lo atrape
-      if (!res.ok) {
-        throw new Error('Error al conectar con la API de vendedores');
-      }
-      return res.json();
+  fetch('/api/sellers')
+    .then(res => res.json())
+    .then(data => {
+       if (Array.isArray(data)) {
+         onSellersUpdate(data);
+       }
     })
-      .then(data => onSellersUpdate(data))
-      .catch(err => console.error("Error cargando vendedores:", err));
-  }, [onSellersUpdate]);
-
+    .catch(err => console.error("Error:", err));
+}, []); // Dependencias vacías para evitar bucles
 
     // AGREGA ESTO AQUÍ:
   const sellersMap = React.useMemo(() => {
@@ -585,7 +582,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               {userRole === 'ADMIN' && (
                 <select value={adminVendedorFilter} onChange={(e) => setAdminVendedorFilter(e.target.value)} className="px-3 py-1.5 text-xs bg-white border rounded-xl text-zinc-700 font-semibold focus:outline-none h-[34px]">
                   <option value="todos">Todos los Vendedores</option>
-                  {uniqueSellers.map(s => <option key={s} value={s}>{s}</option>)}
+                  {uniqueSellers.map(s => <option key={s.id} value={s.name}>{s.name}</option>
                 </select>
               )}
             </div>
