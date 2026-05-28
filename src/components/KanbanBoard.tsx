@@ -153,7 +153,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
 
 
-  const [sellers, setSellers] = useState<any[]>([]);
+  const [localSellers, setLocalSellers] = useState<any[]>(sellers);
 
   useEffect(() => {
     fetch('/api/sellers')
