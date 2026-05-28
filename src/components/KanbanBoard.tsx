@@ -486,6 +486,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const uniqueSellers: string[] = Array.from(new Set(leads.map(l => (l.vendedor || '').trim()).filter(Boolean)));
 
   const roleFilteredLeads = leads.filter(lead => {
+    
+    const filterValue = adminVendedorFilter.toLowerCase();
+  const leadSellerName = (lead.seller_name || '').trim().toLowerCase();
+  
+  // LOG DE VERIFICACIÓN
+  console.log(`Comparando: Filtro=[${filterValue}] vs Lead=[${leadSellerName}] | Match: ${filterValue === leadSellerName}`);
+    
   if (userRole === 'ADMIN') {
     if (adminVendedorFilter === 'todos') return true;
     
