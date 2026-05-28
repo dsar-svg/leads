@@ -121,60 +121,45 @@ async function startServer() {
     }
   });
 
-  // 3. ACTUALIZAR LEAD (Adaptado a tus columnas nativas y añadiendo la unificación del motivo de cierre)
-  // 3. ACTUALIZAR LEAD (Corregido alineando los campos exactos de tu phpMyAdmin)
+  // 3. ACTUALIZAR LEAD (Cálculo automático de Tiempo de Primer Contacto)
   app.put("/api/leads/:id", async (req, res) => {
     if (!pool) return res.status(503).json({ error: "Database not available" });
     const { id } = req.params;
     const lead = req.body;
     try {
-      // Obtener el status viejo de la base de datos para registrar el historial si cambia
-      const [oldLeadRows]: any = await pool.query("SELECT status FROM leads WHERE id=?", [id]);
-      const oldStatus = oldLeadRows.length > 0 ? oldLeadRows[0].status : null;
+      // 1. Obtener los datos actuales del lead antes de actualizar
+      const [oldLeadRows]: any = await pool.query("SELECT status, created_at, tiempo_primer_contacto_horas FROM leads WHERE id=?", [id]);
+      if (oldLeadRows.length === 0) return res.status(404).json({ error: "Lead not found" });
+      
+      const oldStatus = oldLeadRows[0].status;
+      let tiempoPrimerContacto = oldLeadRows[0].tiempo_primer_contacto_horas;
 
-      // Consulta corregida usando 'ubicacion_detalle' en lugar de 'ubicacion_detail'
+      // 2. Si pasa de NUEVO a CONTACTADO y no tiene tiempo registrado, calculamos las horas reales transcurridas
+      if (oldStatus === 'NUEVO' && lead.estatus === 'CONTACTADO' && tiempoPrimerContacto === null) {
+        const [timeResult]: any = await pool.query(
+          "SELECT TIMESTAMPDIFF(HOUR, created_at, NOW()) as horas FROM leads WHERE id=?", [id]
+        );
+        // Si fue menor a 1 hora, guardamos 1 hora como mínimo representativo
+        tiempoPrimerContacto = timeResult[0].horas <= 0 ? 1 : timeResult[0].horas;
+      }
+
+      // 3. Ejecutar la actualización incorporando la nueva columna
       await pool.query(
         `UPDATE leads SET 
-          name=?, 
-          nombre_contacto=?, 
-          rif=?, 
-          telefono=?, 
-          ubicacion_estado=?, 
-          ubicacion_detalle=?, 
-          categoria_interes=?, 
-          canal_origen=?, 
-          campana=?, 
-          seller_id=?, 
-          status=?, 
-          observaciones_vendedor=?, 
-          monto_cerrado_usd=?, 
-          num_factura=?, 
-          fecha_venta=?, 
-          motivo_cierre=?, 
-          updated_at=NOW() 
+          name=?, nombre_contacto=?, rif=?, telefono=?, ubicacion_estado=?, ubicacion_detalle=?, 
+          categoria_interes=?, canal_origen=?, campana=?, seller_id=?, 
+          status=?, observaciones_vendedor=?, monto_cerrado_usd=?, 
+          num_factura=?, fecha_venta=?, motivo_cierre=?, tiempo_primer_contacto_horas=?, updated_at=NOW() 
         WHERE id=?`,
         [
-          lead.empresa || lead.nombre || '', 
-          lead.nombre || '', 
-          lead.rif || '', 
-          lead.telefono || '', 
-          lead.ubicacionEstado || '', 
-          lead.ubicacionDetalle || lead.ubicacion_detalle || '', 
-          lead.categoriaInteres || '', 
-          lead.canalOrigen || '', 
-          lead.campana || '', 
-          lead.seller_id || null, 
-          lead.estatus || 'NUEVO', 
-          lead.notas || '', 
-          Number(lead.valorEstimado || 0), 
-          lead.numFactura || '', 
-          lead.fechaVenta || null,
-          lead.motivoCierre || null,
-          id
+          lead.empresa || lead.nombre || '', lead.nombre || '', lead.rif || '', lead.telefono || '', lead.ubicacionEstado || '', 
+          lead.ubicacionDetalle || lead.ubicacion_detalle || '', lead.categoriaInteres || '', lead.canalOrigen || '', lead.campana || '', 
+          lead.seller_id || null, lead.estatus || 'NUEVO', lead.notas || '', Number(lead.valorEstimado || 0), 
+          lead.numFactura || '', lead.fechaVenta || null, lead.motivoCierre || null, tiempoPrimerContacto, id
         ]
       );
 
-      // Registrar historial en historial_fases si cambió la etapa comercial de forma legítima
+      // Registrar historial en historial_fases
       if (oldStatus !== lead.estatus && lead.estatus) {
         await pool.query(
           "INSERT INTO historial_fases (id_lead, fase_anterior, fase_nueva, fecha_cambio, usuario_cambio) VALUES (?, ?, ?, NOW(), ?)",
