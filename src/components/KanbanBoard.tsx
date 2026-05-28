@@ -493,8 +493,14 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const activePipelineValue = activeLeads.reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
   
   const statsLeads = selectedVendorStatsFilter === 'Todos' ? leads : leads.filter(l => l.vendedor === selectedVendorStatsFilter);
-  const statsClosedLeads = statsLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO' || l.estatus === 'CERRADO_ABANDONADO');
-  const totalClosedSalesValue = statsClosedLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
+  const statsClosedLeads = statsLeads.filter(l => 
+  l.estatus === 'CERRADO_VENTA' || 
+  l.estatus === 'CERRADO' || 
+  l.estatus === 'CERRADO_ABANDONADO'
+);
+  const totalClosedSalesValue = statsClosedLeads
+  .filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO')
+  .reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
 
   const closedSalesCount = statsClosedLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').length;
   const closedAbandonedCount = statsClosedLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO').length;
