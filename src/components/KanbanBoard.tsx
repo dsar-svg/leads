@@ -756,10 +756,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     // Normalizamos ambos lados
     const nameFormatted = sellerName.toString().trim().toLowerCase();
     const filterFormatted = currentFilter.toString().trim().toLowerCase();
-    
+    console.log(`Comparando Lead ${l.id} | Nombre: ${sellerName} | Filtro: ${currentFilter}`);
+    console.log("Debug Filtro:", { lId, sellerName, nameFormatted, filterFormatted });
     return nameFormatted === filterFormatted;
   })
-    console.log("Debug Filtro:", { lId, sellerName, nameFormatted, filterFormatted });
     ;
 }, [leads, currentFilter, sellersMap]);
 
