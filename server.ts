@@ -41,18 +41,17 @@ async function startServer() {
 
   // 1. OBTENER LEADS (Se eliminó 'fechaIngreso' y se adaptó a la estructura exacta en snake_case)
   app.get("/api/leads", async (req, res) => {
-    if (!pool) {
-      return res.status(503).json({ error: "Database not available" });
+  try {
+    const [rows] = await pool.query("SELECT ..."); 
+    return res.json(rows); // <--- IMPORTANTE: Agrega el 'return' aquí
+  } catch (error) {
+    console.error("Error en SELECT:", error);
+    // Si ya enviamos una respuesta, no debemos enviar otra
+    if (!res.headersSent) {
+      return res.status(500).json({ error: "Error interno" });
     }
-    try {
-        const [rows]: any = await pool.query(`
-                SELECT 
-          leads.*, 
-          sellers.name as seller_name,
-          sellers.id as seller_id_check
-        FROM leads 
-        LEFT JOIN sellers ON leads.seller_id = sellers.id
-      `);
+  }
+});
       console.log("Primer lead obtenido:", rows[0]); // <--- MIRA ESTO EN LA CONSOLA DEL SERVIDOR
       res.json(rows);
       // Mapeo simétrico para traducir lo que tiene MySQL al formato que espera React
