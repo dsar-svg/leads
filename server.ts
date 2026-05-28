@@ -46,15 +46,15 @@ async function startServer() {
     }
     try {
         const [rows]: any = await pool.query(`
-          SELECT 
-            leads.*, 
-            sellers.name as seller_name,
-            tiempo_primer_contacto_minutos 
-          FROM leads 
-          LEFT JOIN sellers ON leads.seller_id = sellers.id 
-          ORDER BY leads.created_at DESC
-        `);
-
+                SELECT 
+          leads.*, 
+          sellers.name as seller_name,
+          sellers.id as seller_id_check
+        FROM leads 
+        LEFT JOIN sellers ON leads.seller_id = sellers.id
+      `);
+      console.log("Primer lead obtenido:", rows[0]); // <--- MIRA ESTO EN LA CONSOLA DEL SERVIDOR
+      res.json(rows);
       // Mapeo simétrico para traducir lo que tiene MySQL al formato que espera React
       const mappedLeads = rows.map((lead: any) => ({
         id: lead.id.toString(), // Convertimos el entero de MySQL a string para el drag and drop del Front
