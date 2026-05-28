@@ -768,11 +768,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const finalMonto = isSale ? Number(montoCerrado || 0) : 0;
     const finalInvoice = isSale ? nroFactura.trim() : '';
 
-    if (isSale) {
-      if (!montoCerrado || finalMonto <= 0) {
-        setClosureError('Por favor introduce un monto de venta válido y mayor a 0 para el cierre.');
-        return;
-      }
+    if (isSale && (!montoCerrado || finalMonto <= 0)) {
+      setClosureError('Por favor introduce un monto de venta válido y mayor a 0 para el cierre.');
+      return;
     }
 
     if (!fechaCierre) {
@@ -780,8 +778,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       return;
     }
 
-    setIsLoadingFromSheets(true);
     setClosureError('');
+    setIsClosureModalOpen(false);
+
+    // Mandamos los datos de cierre estructurados directo a la ruta unificada de tu base de datos
+    await handleStatusChange(closingLead.id, isSale ? 'CERRADO_VENTA' : 'CERRADO_ABANDONADO', {
+      valorEstimado: finalMonto,
+      numFactura: finalInvoice,
+      fechaVenta: fechaCierre,
+      motivoCierre: motivoCierre // Almacena 'VENTA' o 'ABANDONADO' en la columna unificada de leads
+    });
+
+    setClosingLead(null);
+  };
 
     try {
       if (isSecondPurchaseFlow) {
