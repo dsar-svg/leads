@@ -62,7 +62,7 @@ import { INITIAL_LEADS } from '../mockData';
 import { KanbanColumn } from './KanbanColumn';
 import { LeadCard } from './LeadCard';
 import { SellerRanking } from './SellerRanking';
-import {
+import { 
   getWebhookUrl, 
   saveWebhookUrl, 
   sendWebhookStatusChange, 
@@ -181,7 +181,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     setInternalActiveTab(tab);
   };
 
-  // Leads State
+  // Leads State unificado
   const [leads, setLeads] = useState<any[]>([]);
 
   // Fetch from Database
@@ -210,7 +210,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
-  // Fetch from Database al inicializar el componente
   useEffect(() => {
     fetchLeadsFromDB();
   }, []);
@@ -220,7 +219,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       const sellers = Array.from(
         new Set(leads.map(l => (l.vendedor || '').trim()).filter(Boolean))
       );
-      onSellersUpdate(sellers);
+      onSellersUpdate(sellers as string[]);
     }
   }, [leads, onSellersUpdate]);
 
@@ -307,7 +306,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     new Set(leads.map(l => (l.vendedor || 'Sin Asignar').trim()).filter(Boolean))
   ) as string[];
 
-  // Google Sheets Connection States
+  // Google Sheets Connection States (Mantenidos por compatibilidad estructural)
   const [user, setUser] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
   const [spreadsheetId, setSpreadsheetId] = useState(getSavedSpreadsheetId() || '');
@@ -336,7 +335,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
-  // Drag Overlay & Optimistic UI Trackers
+  // Drag Overlay & Trackers
   const [updatingLeadIds, setUpdatingLeadIds] = useState<string[]>([]);
   const [activeLead, setActiveLead] = useState<any>(null);
   const [showCelebration, setShowCelebration] = useState<boolean>(false);
@@ -356,7 +355,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [formLead, setFormLead] = useState<any>(null);
   const [formError, setFormError] = useState('');
 
-  // New Column Dynamic Builder States
+  // New Column States
   const [isAddingCol, setIsAddingCol] = useState(false);
   const [newColTitle, setNewColTitle] = useState('');
 
@@ -398,13 +397,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     localStorage.setItem('crm_kanban_columns', JSON.stringify(columns));
   }, [columns]);
 
-  useEffect(() => {
-    if (!token || !spreadsheetId) {
-      localStorage.setItem('crm_leads_data', JSON.stringify(leads));
-    }
-  }, [leads, token, spreadsheetId]);
-
-  // Google Sheets Initial Auth
+  // Google Sheets Initial Auth fallback tracker
   useEffect(() => {
     const unsubscribe = initAuth(
       async (currentUser, accessToken) => {
@@ -423,17 +416,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return () => unsubscribe();
   }, []);
 
-  // Fetch from GSheets Handler
   const loadLeads = async (accessToken: string, sid: string) => {
     if (!accessToken || !sid) return;
     setIsLoadingFromSheets(true);
     setSheetsError('');
     try {
       const parsedId = parseSpreadsheetIdInput(sid);
-      const result = await fetchLeadsFromSheet();
+      const result = await fetchLeadsFromSheet(accessToken, parsedId);
       setLeads(result.leads);
       setSheetTitle(result.sheetTitle);
-      showToast(`Conectado y sincronizado: ${result.leads.length} leads cargados.`, 'success');
+      showToast(`Sincronizado correctamente.`, 'success');
     } catch (error: any) {
       console.error(error);
       setSheetsError(error.message || 'Error al conectar.');
@@ -443,75 +435,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
-  const handleGoogleLogin = async () => {
-    try {
-      setSheetsError('');
-      setIsLoadingFromSheets(true);
-      const result = await googleSignIn();
-      if (result) {
-        setUser(result.user);
-        setToken(result.accessToken);
-        const activeId = getSavedSpreadsheetId();
-        if (activeId) {
-          await loadLeads(result.accessToken, activeId);
-        }
-      }
-    } catch (error: any) {
-      console.error(error);
-      setSheetsError(error.message || 'Error al conectar.');
-      setLeads(INITIAL_LEADS);
-    } finally {
-      setIsLoadingFromSheets(false);
-    }
-  };
-
-  const handleGoogleLogout = async () => {
-    if (confirm('¿Desconectar Google Sheets y volver al modo local?')) {
-      await logout();
-      setUser(null);
-      setToken(null);
-      setSheetTitle('');
-      setLeads(INITIAL_LEADS);
-    }
-  };
-
-  const handleConnectSpreadsheet = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!spreadsheetInput.trim()) {
-      setSheetsError('Por favor ingresa un ID válido.');
-      return;
-    }
-    setSheetsError('');
-    const parsedId = parseSpreadsheetIdInput(spreadsheetInput);
-    saveSpreadsheetId(parsedId);
-    setSpreadsheetId(parsedId);
-
-    if (token) {
-      await loadLeads(token, parsedId);
-    } else {
-      setSheetsError('Primero inicia sesión de Google.');
-    }
-  };
-
-  const handleSaveWebhook = (e: React.FormEvent) => {
-    e.preventDefault();
-    saveWebhookUrl(webhookUrl);
-    setIsSettingsOpen(false);
-    
-    const newLog: WebhookLog = {
-      id: Math.random().toString(),
-      timestamp: new Date().toISOString(),
-      leadId: 'SYSTEM',
-      leadNombre: 'Webhook Config',
-      newStatus: 'STATUS',
-      url: webhookUrl,
-      status: 'SUCCESS',
-      responseMessage: `Webhook de n8n registrado: ${webhookUrl}`
-    };
-    setWebhookLogs(prev => [newLog, ...prev]);
-  };
-
-  // Drag & Drop Handler
+  // Drag & Drop Handlers
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const lead = leads.find(l => l.id === active.id);
@@ -543,7 +467,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
-  // Perform status updates hacia tu Servidor Express Real con tipado flexible
+  // Perform status updates real hacia MySQL con tipado flexible para evitar fallos de esbuild
   const handleStatusChange = async (leadId: string, newStatus: string, closureData?: any) => {
     const leadIdx = leads.findIndex((l: any) => l.id === leadId);
     if (leadIdx === -1) return;
@@ -552,7 +476,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const prevStatus = originalLead.estatus;
     if (prevStatus === newStatus && !closureData) return;
 
-    // 1. Construimos el objeto unificado uniendo los datos previos con el cierre
     const updatedLead: any = {
       ...originalLead,
       estatus: newStatus,
@@ -560,7 +483,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       ...(closureData || {})
     };
 
-    // 2. Actualización optimista de la interfaz
     setLeads((prev: any[]) => prev.map((l: any) => l.id === leadId ? updatedLead : l));
     setUpdatingLeadIds((prev: string[]) => [...prev, leadId]);
 
@@ -569,7 +491,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       setTimeout(() => setShowCelebration(false), 3000);
     }
 
-    // 3. Disparamos la petición HTTP PUT real a tu backend en Express
     try {
       const response = await fetch(`/api/leads/${leadId}`, {
         method: 'PUT',
@@ -578,10 +499,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       });
 
       if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+      showToast(`¡Excelente! "${originalLead.nombre}" actualizado en MySQL con éxito.`, 'success');
 
-      showToast(`¡Excelente! "${originalLead.nombre}" actualizado con éxito en MySQL.`, 'success');
-
-      // 4. Integración con n8n de fondo
       sendWebhookStatusChange(updatedLead, prevStatus).then((val: any) => {
         const newLog: any = {
           id: Math.random().toString(),
@@ -598,7 +517,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       });
 
     } catch (error: any) {
-      console.error('Error al actualizar el lead en backend:', error);
+      console.error(error);
       showToast('Error de comunicación: No se pudo guardar en la base de datos.', 'error');
     } finally {
       setUpdatingLeadIds((prev: string[]) => prev.filter((id: string) => id !== leadId));
@@ -636,17 +555,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       alert('Las columnas por defecto no pueden eliminarse.');
       return;
     }
-
     const leadsInCol = leads.filter(l => l.estatus === colId);
     if (leadsInCol.length > 0) {
       if (!confirm(`La columna tiene leads activos. Se migrarán a "NUEVO". ¿Proceder?`)) return;
       setLeads(prev => prev.map(l => l.estatus === colId ? { ...l, estatus: 'NUEVO' } : l));
     }
-
     setColumns(prev => prev.filter(c => c.id !== colId));
   };
 
-  // Lead Closure Form Handlers
+  // Lead Closure Modals
   const handleOpenClosureModal = (lead: any) => {
     setIsSecondPurchaseFlow(false);
     setClosingLead(lead);
@@ -689,7 +606,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const finalInvoice = isSale ? nroFactura.trim() : '';
 
     if (isSale && (!montoCerrado || finalMonto <= 0)) {
-      setClosureError('Por favor introduce un monto de venta válido y mayor a 0 para el cierre.');
+      setClosureError('Por favor introduce un monto de venta válido.');
       return;
     }
 
@@ -701,7 +618,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     setClosureError('');
     setIsClosureModalOpen(false);
 
-    // Mandamos los datos de cierre estructurados directo a la ruta unificada de leads
     await handleStatusChange(closingLead.id, isSale ? 'CERRADO_VENTA' : 'CERRADO_ABANDONADO', {
       valorEstimado: finalMonto,
       numFactura: finalInvoice,
@@ -723,7 +639,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
-  // Standard Lead Creation / Edition Handler
+  // Standard Forms
   const handleOpenAddForm = () => {
     setFormLead({
       id: `L-${Date.now()}`,
@@ -759,7 +675,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     if (!formLead) return;
 
     if (!formLead.nombre?.trim() || !formLead.empresa?.trim() || !formLead.telefono?.trim()) {
-      setFormError('Campos requeridos vacíos. Rellene Nombre, Empresa y Teléfono.');
+      setFormError('Campos requeridos vacíos.');
       return;
     }
 
@@ -798,12 +714,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
-  // Get active lists of sellers
+  // Mapeos de filtros consolidados desde MySQL
   const uniqueSellers: string[] = Array.from(
     new Set(leads.map(l => (l.vendedor || '').trim()).filter(Boolean))
   );
 
-  // Filter based on selected user & role
   const roleFilteredLeads = leads.filter(lead => {
     if (userRole === 'ADMIN') {
       if (adminVendedorFilter === 'todos') return true;
@@ -812,7 +727,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return (lead.vendedor || '').trim().toLowerCase() === selectedVendedor.trim().toLowerCase();
   });
 
-  // Apply search filtering on top of role scope
   const filteredLeads = roleFilteredLeads.filter(lead => {
     const query = searchQuery.toLowerCase();
     return (
@@ -823,7 +737,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     );
   });
 
-  // Calculate distinct lists
+  // Segmentación comercial de leads
   const activeLeads = filteredLeads.filter(l => 
     l.estatus !== 'CERRADO' && 
     l.estatus !== 'CERRADO_VENTA' && 
@@ -853,6 +767,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     return closingReason === closedReasonFilter;
   });
 
+  // Métricas reales calculadas desde la base de datos
   const totalLeadsCount = filteredLeads.length;
   const activeLeadsCount = activeLeads.length;
   const activePipelineValue = activeLeads.reduce((sum, l) => sum + (l.valorEstimado || 0), 0);
@@ -895,7 +810,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     ? Math.round(totalClosureDays / closedLeadsWithBothDates.length)
     : 0;
 
-  const averageResponseTimeHours = 2; // Default mock stats value for display metrics
+  const averageResponseTimeHours = 2; // KPI base
 
   return (
     <div className="w-full max-w-7xl mx-auto px-4 py-6 space-y-6">
@@ -905,7 +820,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             <div>
               <h1 className="text-xl font-extrabold text-zinc-900 mt-1">SUPRI LEADS</h1>
               <p className="text-xs text-zinc-500 mt-0.5">
-                Tablero dinámico de prospección comercial mayorista. Cambia de estatus, arrastra candidatos y cierra oportunidades.
+                Tablero dinámico de prospección. Cambia de estatus, arrastra candidatos y cierra tus oportunidades.
               </p>
             </div>
           </div>
@@ -921,11 +836,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9 pr-4 py-2 text-xs border border-zinc-200 rounded-xl bg-zinc-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 w-full"
                 />
-                {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                )}
               </div>
 
               {userRole === 'ADMIN' && (activeTab === 'board' || activeTab === 'closed') && (
@@ -934,7 +844,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   <select
                     value={adminVendedorFilter}
                     onChange={(e) => setAdminVendedorFilter(e.target.value)}
-                    className="px-3 py-1.5 text-xs bg-white border border-zinc-200 rounded-xl text-zinc-700 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500 h-[34px]"
+                    className="px-3 py-1.5 text-xs bg-white border border-zinc-200 rounded-xl text-zinc-700 font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer h-[34px] shadow-xs"
                   >
                     <option value="todos">Todos</option>
                     {uniqueSellers.map((seller) => (
@@ -948,19 +858,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             <div className="flex items-center gap-2 flex-wrap">
               {userRole === 'ADMIN' && activeTab === 'board' && (
                 <div className="flex bg-zinc-100 p-1 rounded-xl border border-zinc-200/60 mr-1 shadow-xs">
-                  <button onClick={() => setBoardLayout('columns')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${boardLayout === 'columns' ? 'bg-white text-zinc-900 border shadow-xs' : 'text-zinc-500'}`}>
+                  <button onClick={() => setBoardLayout('columns')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${boardLayout === 'columns' ? 'bg-white text-zinc-905 shadow-xs font-extrabold border border-zinc-200/50' : 'text-zinc-500'}`}>
                     <LayoutGrid className="w-3.5 h-3.5" />
-                    <span>Columnas</span>
+                    <span className="hidden sm:inline">Columnas</span>
                   </button>
-                  <button onClick={() => setBoardLayout('table')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold ${boardLayout === 'table' ? 'bg-white text-zinc-900 border shadow-xs' : 'text-zinc-500'}`}>
+                  <button onClick={() => setBoardLayout('table')} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${boardLayout === 'table' ? 'bg-white text-zinc-905 shadow-xs font-extrabold border border-zinc-200/50' : 'text-zinc-500'}`}>
                     <Table className="w-3.5 h-3.5" />
-                    <span>Tabla</span>
+                    <span className="hidden sm:inline">Tabla</span>
                   </button>
                 </div>
               )}
 
               {activeTab === 'board' && (
-                <button onClick={handleOpenAddForm} className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors">
+                <button onClick={handleOpenAddForm} className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl cursor-pointer shadow-sm transition-colors">
                   <Plus className="w-4 h-4" />
                   <span>Registrar Prospecto</span>
                 </button>
@@ -975,15 +885,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
               <div>
-                <span className="text-[11px] font-bold text-zinc-400 uppercase block">Oportunidades Activas</span>
-                <span className="text-xl font-black text-zinc-850 block mt-1">{activeLeadsCount}</span>
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Oportunidades Activas</span>
+                <span className="text-xl font-black text-zinc-850 mt-1 block">{activeLeadsCount}</span>
               </div>
               <span className="p-2.5 bg-blue-50 text-blue-650 rounded-lg"><Users2 className="w-5 h-5" /></span>
             </div>
 
             <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
               <div>
-                <span className="text-[11px] font-bold text-zinc-400 uppercase block">Pipeline Estimado</span>
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Pipeline Activo Estimado</span>
                 <span className="text-xl font-bold text-zinc-800 mt-1 block">
                   {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(activePipelineValue)}
                 </span>
@@ -993,7 +903,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
             <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
               <div>
-                <span className="text-[11px] font-bold text-zinc-400 uppercase block">% de Efectividad</span>
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">% de Efectividad de Cierre</span>
                 <span className="text-xl font-bold text-zinc-800 mt-1 block">{conversionPercentage}%</span>
               </div>
               <span className="p-2.5 bg-purple-50 text-purple-650 rounded-lg"><CheckCircle2 className="w-5 h-5" /></span>
@@ -1006,7 +916,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-zinc-50 border-b border-zinc-200 text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
-                      <th className="py-3 px-4">Prospecto / Empresa</th>
+                      <th className="py-3 px-4">Prospecto / Organización</th>
                       <th className="py-3 px-4">Contacto</th>
                       <th className="py-3 px-4">Origen</th>
                       <th className="py-3 px-4">Vendedor</th>
@@ -1016,26 +926,24 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   </thead>
                   <tbody className="divide-y divide-zinc-100 text-xs text-zinc-700">
                     {activeLeads.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="py-12 text-center text-zinc-400 italic">No hay registros activos.</td>
-                      </tr>
+                      <tr><td colSpan={6} className="py-12 text-center text-zinc-400 italic">No se encontraron registros.</td></tr>
                     ) : (
                       activeLeads.map((lead) => (
-                        <tr key={lead.id} className="hover:bg-zinc-50/75">
-                          <td className="py-3.5 px-4 font-bold text-zinc-900">{lead.nombre} <span className="text-[10px] font-normal text-zinc-400">({lead.empresa})</span></td>
-                          <td className="py-3.5 px-4 text-zinc-600">{lead.telefono}</td>
-                          <td className="py-3.5 px-4 text-zinc-500">{lead.canalOrigen || 'Directo'}</td>
-                          <td className="py-3.5 px-4 font-semibold">{lead.vendedor}</td>
+                        <tr key={lead.id} className="hover:bg-zinc-50/75 transition-colors">
+                          <td className="py-3.5 px-4 font-bold text-zinc-900">{lead.nombre} <span className="text-[10px] font-mono text-zinc-400 font-normal">#{lead.id}</span></td>
+                          <td className="py-3.5 px-4 font-semibold text-zinc-800">{lead.telefono}</td>
+                          <td className="py-3.5 px-4"><span className="bg-zinc-100 px-2 py-0.5 rounded-md text-[10px]">{lead.canalOrigen || 'Orgánico'}</span></td>
+                          <td className="py-3.5 px-4 font-semibold text-zinc-850">{lead.vendedor || 'Sin asignar'}</td>
                           <td className="py-3.5 px-4">
-                            <select value={lead.estatus} onChange={(e) => handleStatusChange(lead.id, e.target.value)} className="border rounded-xl p-1 bg-white text-xs">
+                            <select value={lead.estatus} onChange={(e) => handleStatusChange(lead.id, e.target.value)} className="px-2.5 py-1 text-xs font-bold border rounded-xl bg-white text-zinc-850">
                               {columns.map(col => <option key={col.id} value={col.id}>{col.title}</option>)}
                             </select>
                           </td>
                           <td className="py-3.5 px-4 text-right">
-                            <div className="flex justify-end gap-1.5">
-                              <button onClick={() => handleOpenEditForm(lead)} className="p-1 px-2.5 bg-zinc-100 rounded-lg text-[10px] font-bold flex items-center gap-1"><FileText className="w-3 h-3" />Editar</button>
-                              <button onClick={() => handleOpenClosureModal(lead)} className="p-1 px-2.5 bg-emerald-50 text-emerald-800 rounded-lg text-[10px] font-bold flex items-center gap-1"><Check className="w-3 h-3" />Cerrar</button>
-                              <button onClick={() => handleDeleteLead(lead.id)} className="p-1 text-zinc-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button onClick={() => handleOpenEditForm(lead)} className="p-1 px-2.5 bg-zinc-50 border rounded-lg text-zinc-700 font-bold text-[10px] flex items-center gap-1"><FileText className="w-3 h-3" />Editar</button>
+                              <button onClick={() => handleOpenClosureModal(lead)} className="p-1 px-2.5 bg-emerald-50 border border-emerald-250 rounded-lg text-emerald-800 font-bold text-[10px] flex items-center gap-1"><Check className="w-3 h-3" />Cerrar</button>
+                              <button onClick={() => handleDeleteLead(lead.id)} className="p-1 text-zinc-500 hover:text-red-650"><Trash2 className="w-4 h-4" /></button>
                             </div>
                           </td>
                         </tr>
@@ -1047,13 +955,13 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             </div>
           ) : (
             <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
                 {columns.map((column) => {
-                  const columnLeads = column.id === 'CERRADO' ? recentClosedLeads : activeLeads.filter((l) => l.estatus === column.id);
+                  const columnLeads = column.id === 'CERRADO' ? recentClosedLeads : activeLeads.filter((lead) => lead.estatus === column.id);
                   return (
                     <div key={column.id} className="relative group/col">
                       {userRole === 'ADMIN' && column.id !== 'NUEVO' && column.id !== 'CONTACTADO' && column.id !== 'CERRADO' && (
-                        <button onClick={() => handleRemoveColumn(column.id)} className="absolute top-3.5 right-4 z-20 text-zinc-400 hover:text-red-600 opacity-0 group-hover/col:opacity-100 transition-opacity"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleRemoveColumn(column.id)} className="absolute top-3.5 right-4 z-20 text-zinc-400 hover:text-red-600 p-1 rounded-md hover:bg-zinc-100 opacity-0 group-hover/col:opacity-100 transition-opacity"><Trash2 className="w-3.5 h-3.5" /></button>
                       )}
                       <KanbanColumn
                         column={column}
@@ -1084,17 +992,28 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         </div>
       )}
 
+      {/* 6. TAB 2: HISTORIAL DE LEADS CERRADOS VIEW */}
       {activeTab === 'closed' && (
         <div className="bg-white rounded-2xl border border-zinc-200/80 p-5 space-y-4 shadow-xs">
-          <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2"><Archive className="w-5 h-5 text-zinc-500" /> Historial de Leads Cerrados</h2>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
+            <div>
+              <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2"><Archive className="w-5 h-5 text-zinc-500" /> Historial de Leads Cerrados</h2>
+            </div>
+            <div className="flex items-center gap-4 text-xs font-bold font-mono">
+              <span className="text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border">Won/Ventas: {closedSalesCount} (${totalClosedSalesValue.toLocaleString()})</span>
+              <span className="text-zinc-650 bg-zinc-150 px-3 py-1.5 rounded-xl border">Perdidos: {closedAbandonedCount}</span>
+            </div>
+          </div>
+
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="border-b border-zinc-100 text-zinc-500 uppercase font-bold text-[10px] bg-zinc-50">
+                <tr className="border-b border-zinc-100 text-zinc-450 uppercase font-bold tracking-wider text-[10px] bg-zinc-50">
                   <th className="p-3">Nombre Contacto</th>
                   <th className="p-3">Empresa</th>
                   <th className="p-3">Vendedor</th>
                   <th className="p-3">Motivo de Cierre</th>
+                  <th className="p-3">Fecha Cierre</th>
                   <th className="p-3 text-right">Monto Cerrado</th>
                   <th className="p-3">No Factura</th>
                 </tr>
@@ -1105,22 +1024,21 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     const isWon = lead.estatus === 'CERRADO_VENTA' || lead.estatus === 'CERRADO';
                     const closingReason = lead.motivoCierre || (isWon ? 'VENTA' : 'ABANDONADO');
                     return (
-                      <tr key={lead.id} className="hover:bg-zinc-50/50">
+                      <tr key={lead.id} className="hover:bg-zinc-50/50 transition-colors">
                         <td className="p-3 font-semibold text-zinc-900">{lead.nombre}</td>
                         <td className="p-3 text-zinc-650">{lead.empresa}</td>
-                        <td className="p-3 text-zinc-500">{lead.vendedor}</td>
+                        <td className="p-3 text-zinc-500">{lead.vendedor || 'Unassigned'}</td>
                         <td className="p-3">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${closingReason === 'VENTA' ? 'bg-emerald-50 text-emerald-700' : 'bg-zinc-100 text-zinc-500'}`}>
-                            {closingReason === 'VENTA' ? 'VENTA EXITOSA' : 'ABANDONADO'}
-                          </span>
+                          <span className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-wide ${closingReason === 'VENTA' ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-zinc-100 text-zinc-550 border border-zinc-200'}`}>{closingReason === 'VENTA' ? 'VENTA EXITOSA' : 'ABANDONADO'}</span>
                         </td>
-                        <td className="p-3 text-right font-bold">${(lead.valorEstimado || 0).toLocaleString()}</td>
-                        <td className="p-3 text-zinc-500">{lead.numFactura || '—'}</td>
+                        <td className="p-3 font-mono text-zinc-500">{lead.fechaVenta || 'S/F'}</td>
+                        <td className="p-3 text-right font-bold text-zinc-800">{isWon ? `$${(lead.valorEstimado || 0).toLocaleString()}` : '$0'}</td>
+                        <td className="p-3 font-mono text-zinc-500">{lead.numFactura || '—'}</td>
                       </tr>
                     );
                   })
                 ) : (
-                  <tr><td colSpan={6} className="p-8 text-center text-zinc-400">No hay registros archivados.</td></tr>
+                  <tr><td colSpan={7} className="p-8 text-center text-zinc-450 font-medium">No hay registros archivados.</td></tr>
                 )}
               </tbody>
             </table>
@@ -1128,69 +1046,174 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         </div>
       )}
 
+      {/* 7. TAB 3: RESTITUCIÓN DE LAS ESTADÍSTICAS Y TARJETAS ORIGINALES (CONECTADAS A BACKEND) */}
       {activeTab === 'stats' && (
         <div className="space-y-6">
           <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
-            <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2"><BarChart4 className="w-5 h-5 text-blue-600" /> Estadísticas de Rendimiento</h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col items-center">
-              <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest self-start pb-4">Tasa de Conversión</h3>
-              <div className="text-4xl font-black text-emerald-600">{conversionPercentage}%</div>
+            <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2">
+              <BarChart4 className="w-5 h-5 text-blue-600" />
+              Estadísticas de Rendimiento y Conversión
+            </h2>
+            <div className="flex items-center gap-2 mt-3">
+              <span className="text-xs font-bold text-zinc-500 uppercase">Filtrar por vendedor:</span>
+              <select
+                value={selectedVendorStatsFilter}
+                onChange={(e) => setSelectedVendorStatsFilter(e.target.value)}
+                className="px-3 py-1.5 text-xs bg-white border border-zinc-200 rounded-lg text-zinc-700 font-semibold focus:outline-none"
+              >
+                <option value="Todos">Todos</option>
+                {uniqueSellers.map((seller) => (
+                  <option key={seller} value={seller}>{seller}</option>
+                ))}
+              </select>
             </div>
-            <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
-              <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest pb-4">Volumen Total Recaudado</h3>
-              <div className="text-3xl font-bold text-zinc-800">${totalClosedSalesValue.toLocaleString()} USD</div>
-            </div>
+            <p className="text-xs text-zinc-500 mt-2">
+              Métricas consolidadas del vendedor seleccionado en tiempo real.
+            </p>
           </div>
-        </div>
-      )}
 
-      {isClosureModalOpen && closingLead && (
-        <div className="fixed inset-0 bg-black/75 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border relative">
-            <button type="button" onClick={() => setIsClosureModalOpen(false)} className="absolute top-4 right-4 text-zinc-400"><X className="w-5 h-5" /></button>
-            <h3 className="font-bold text-sm text-zinc-900 mb-4">Configurar Cierre Comercial</h3>
-            <form onSubmit={handleSaveClosure} className="space-y-4">
+          {/* Restitución de las 4 Tarjetas de KPIs Históricos */}
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-5">
+            <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
               <div>
-                <label className="block text-xs font-bold text-zinc-700 mb-1">Motivo de Cierre *</label>
-                <select value={motivoCierre} onChange={(e) => setMotivoCierre(e.target.value as any)} className="w-full px-3 py-2 text-xs border rounded-xl bg-zinc-50">
-                  <option value="VENTA">🎉 Venta Realizada (Ingreso Confirmado)</option>
-                  <option value="ABANDONADO">⚠️ Sin Respuesta / Abandonado</option>
-                </select>
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Cierres con Venta (Won)</span>
+                <span className="text-xl font-black text-emerald-700 mt-1 block">{closedSalesCount} leads</span>
               </div>
-              {motivoCierre === 'VENTA' && (
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-700 mb-1">Monto Cerrado USD *</label>
-                    <input type="number" value={montoCerrado} onChange={(e) => setMontoCerrado(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-xl" required />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-zinc-700 mb-1">Número de Factura</label>
-                    <input type="text" value={nroFactura} onChange={(e) => setNroFactura(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-xl" />
-                  </div>
+              <span className="p-2.5 bg-emerald-50 text-emerald-600 rounded-lg"><CheckCircle2 className="w-5 h-5" /></span>
+            </div>
+
+            <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block font-sans">Recaudado USD (Ventas)</span>
+                <span className="text-xl font-bold text-zinc-850 mt-1 block">
+                  {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(totalClosedSalesValue)}
+                </span>
+              </div>
+              <span className="p-2.5 bg-blue-50 text-blue-650 rounded-lg"><DollarSign className="w-5 h-5" /></span>
+            </div>
+
+            <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Promedio Respuesta</span>
+                <span className="text-xl font-bold text-zinc-850 mt-1 block">{averageResponseTimeHours} <span className="text-xs font-normal text-zinc-500">horas</span></span>
+              </div>
+              <span className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg"><Clock className="w-5 h-5" /></span>
+            </div>
+            
+            <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
+              <div>
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Tiempo Promedio Cierre</span>
+                <span className="text-xl font-bold text-zinc-850 mt-1 block">{averageClosureTimeGlobal} <span className="text-xs font-normal text-zinc-500">días</span></span>
+              </div>
+              <span className="p-2.5 bg-amber-50 text-amber-600 rounded-lg"><Calendar className="w-5 h-5" /></span>
+            </div>
+          </div>
+
+          {/* Ranking oficial de efectividad (Solo visible para ADMIN) */}
+          {userRole === 'ADMIN' && <SellerRanking leads={leads} currentUser={selectedVendedor} />}
+
+          {/* Gráficos de Conversión y Distribución en Barra */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col items-center justify-center">
+              <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-4 self-start">Tasa de Efectividad</h3>
+              <div className="relative w-40 h-40 flex items-center justify-center">
+                <svg className="w-full h-full transform -rotate-90">
+                  <circle cx="80" cy="80" r="65" className="stroke-zinc-100" strokeWidth="10" fill="transparent" />
+                  <circle cx="80" cy="80" r="65" className="stroke-emerald-500 transition-all duration-1000" strokeWidth="12" strokeDasharray={408.4} strokeDashoffset={408.4 - (408.4 * conversionPercentage) / 100} strokeLinecap="round" fill="transparent" />
+                </svg>
+                <div className="absolute flex flex-col items-center justify-center">
+                  <span className="text-3xl font-extrabold text-zinc-900">{conversionPercentage}%</span>
+                  <span className="text-[10px] text-zinc-400 font-bold uppercase">Eficiencia</span>
                 </div>
-              )}
+              </div>
+              <div className="flex gap-4 mt-4 text-[10px] font-bold text-zinc-500 w-full justify-around border-t pt-3">
+                <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 block" /><span>Ventas: {closedSalesCount}</span></div>
+                <div className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-zinc-300 block" /><span>Descartes: {closedAbandonedCount}</span></div>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs lg:col-span-2 flex flex-col justify-between">
               <div>
-                <label className="block text-xs font-bold text-zinc-700 mb-1">Fecha de Cierre</label>
-                <input type="date" value={fechaCierre} onChange={(e) => setFechaCierre(e.target.value)} className="w-full px-3 py-2 text-xs border rounded-xl" />
+                <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-2">Distribución de Leads por Etapa</h3>
+                <p className="text-[11px] text-zinc-400 pb-4">Densidad de volumen de la cartera activa en MySQL.</p>
               </div>
-              <div className="pt-4 border-t flex justify-end gap-2 text-xs">
-                <button type="button" onClick={() => setIsClosureModalOpen(false)} className="px-4 py-2 border rounded-xl text-zinc-600">Cancelar</button>
-                <button type="submit" className="px-5 py-2 bg-blue-600 text-white font-bold rounded-xl">Aplicar Cierre</button>
+              <div className="space-y-3 flex-1 flex flex-col justify-center">
+                {columns.map((column) => {
+                  const statsActiveLeads = statsLeads.filter(l => l.estatus !== 'CERRADO_VENTA' && l.estatus !== 'CERRADO_ABANDONADO' && l.estatus !== 'CERRADO');
+                  const amtInCol = statsActiveLeads.filter(l => l.estatus === column.id).length;
+                  const ratio = statsActiveLeads.length > 0 ? (amtInCol / statsActiveLeads.length) * 100 : 0;
+                  return (
+                    <div key={column.id} className="space-y-1">
+                      <div className="flex justify-between text-xs font-semibold">
+                        <span className="text-zinc-800 flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${column.color}`} />{column.title}</span>
+                        <span className="text-zinc-500 font-mono">{amtInCol} leads</span>
+                      </div>
+                      <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden">
+                        <div className={`h-full rounded-full ${column.color}`} style={{ width: `${Math.max(ratio, 2)}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
 
+      {/* 7.5 TAB 4: CONFIGURACIONES */}
+      {activeTab === 'settings' && userRole === 'ADMIN' && (
+        <div className="space-y-6 animate-fade-in">
+          <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-xs">
+            <div className="flex items-center gap-3">
+              <span className="p-3 bg-zinc-900 text-white rounded-xl"><Settings2 className="w-6 h-6" /></span>
+              <div>
+                <h2 className="text-lg font-bold text-zinc-900">Panel de Control & Ajustes del Administrador</h2>
+                <p className="text-xs text-zinc-500">Configura y personaliza las fases comerciales del embudo.</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm space-y-4">
+            <h3 className="font-bold text-sm text-zinc-800 flex items-center gap-2 border-b border-zinc-100 pb-2"><Layers className="w-4.5 h-4.5 text-blue-600" /> Gestión de Fases y Columnas del Embudo</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3 bg-zinc-50/50 p-4 rounded-xl border max-h-[280px]">
+                <h4 className="text-xs font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1"><PlusCircle className="w-4 h-4 text-blue-500" /> Agregar Nueva Fase</h4>
+                <form onSubmit={handleAddColumn} className="space-y-3">
+                  <input type="text" placeholder="Escriba fase (Ej: PROPUESTA)" value={newColTitle} onChange={(e) => setNewColTitle(e.target.value)} className="w-full px-3 py-2 border rounded-xl text-xs uppercase font-bold text-zinc-800" required />
+                  <button type="submit" className="w-full bg-blue-600 text-white font-bold text-xs px-4 py-2.5 rounded-xl">Crear y Registrar Fase</button>
+                </form>
+              </div>
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-zinc-700 uppercase tracking-wider flex items-center gap-1">🌐 Fases Activas Registradas ({columns.length})</h4>
+                <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                  {columns.map((column, index) => {
+                    const count = leads.filter(l => l.estatus === column.id).length;
+                    const isProtected = column.id === 'NUEVO' || column.id === 'CONTACTADO';
+                    return (
+                      <div key={column.id} className="flex items-center justify-between p-3 bg-white border rounded-xl">
+                        <span className="text-xs font-bold text-zinc-850">{column.title}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-bold text-zinc-500 bg-zinc-100 px-2 py-0.5 rounded-full">{count} leads</span>
+                          {!isProtected && <button onClick={() => handleRemoveColumn(column.id)} className="text-red-600 text-[10px] font-bold hover:underline">Quitar</button>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 10. NEW / EDIT LEAD GENERAL MODAL */}
       {isFormOpen && formLead && (
         <div className="fixed inset-0 bg-black/65 flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl relative max-h-[90vh] overflow-y-auto">
-            <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-zinc-400"><X className="w-5 h-5" /></button>
-            <h3 className="text-base font-bold text-zinc-900 mb-4">Formulario de Oportunidad</h3>
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-xl relative my-8 max-h-[90vh] overflow-y-auto">
+            <button onClick={() => setIsFormOpen(false)} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-650" type="button"><X className="w-5 h-5" /></button>
+            <h3 className="text-base font-bold text-zinc-900 mb-4 flex items-center gap-2"><Sparkles className="w-4 h-4 text-amber-500" /> Formulario de Oportunidad</h3>
             <form onSubmit={handleSaveLead} className="space-y-4">
-              <div className="space-y-3 bg-zinc-50 p-4 rounded-xl border">
+              <div className="bg-zinc-50/50 p-4 rounded-xl border space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-semibold text-zinc-700 mb-1">Nombre Contacto *</label>
@@ -1217,27 +1240,27 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     <input type="text" value={formLead.ubicacionEstado || ''} onChange={(e) => setFormLead({ ...formLead, ubicacionEstado: e.target.value })} className="w-full px-3 py-2 text-xs border rounded-xl" />
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-zinc-700 mb-1">Monto Estimado</label>
+                    <label className="block text-xs font-semibold text-zinc-700 mb-1">Monto Inicial Estimado</label>
                     <input type="number" value={formLead.valorEstimado || ''} onChange={(e) => setFormLead({ ...formLead, valorEstimado: Number(e.target.value) })} className="w-full px-3 py-2 text-xs border rounded-xl" />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-700 mb-1">Vendedor</label>
+                  <label className="block text-xs font-semibold text-zinc-700 mb-1">Vendedor Responsable</label>
                   <input type="text" value={formLead.vendedor || ''} onChange={(e) => setFormLead({ ...formLead, vendedor: e.target.value })} disabled={userRole === 'VENDEDOR'} className="w-full px-3 py-2 text-xs border rounded-xl bg-zinc-100" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-zinc-700 mb-1">Fase Inicial</label>
+                  <label className="block text-xs font-semibold text-zinc-700 mb-1">Fase del Embudo</label>
                   <select value={formLead.estatus || 'NUEVO'} onChange={(e) => setFormLead({ ...formLead, estatus: e.target.value })} className="w-full px-3 py-2 text-xs border rounded-xl bg-white">
                     {columns.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-zinc-700 mb-1">Observaciones</label>
-                  <textarea value={formLead.notas || ''} onChange={(e) => setFormLead({ ...formLead, notas: e.target.value })} className="w-full px-3 py-2 text-xs border rounded-xl" rows={2} />
+                  <textarea rows={2} value={formLead.notas || ''} onChange={(e) => setFormLead({ ...formLead, notas: e.target.value })} className="w-full px-3 py-2 text-xs border rounded-xl" />
                 </div>
               </div>
               <div className="pt-4 border-t flex justify-end gap-2 text-xs">
-                <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 border rounded-xl text-zinc-600">Cancelar</button>
+                <button type="button" onClick={() => setIsFormOpen(false)} className="px-4 py-2 border rounded-xl text-zinc-650">Cancelar</button>
                 <button type="submit" className="px-5 py-2 bg-zinc-950 text-white font-bold rounded-xl">Guardar Cambios</button>
               </div>
             </form>
