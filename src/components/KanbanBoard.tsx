@@ -488,7 +488,17 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
-  const uniqueSellers: string[] = Array.from(new Set(leads.map(l => (l.seller_name || '').trim()).filter(Boolean)));
+  const uniqueSellersNames: string[] = Array.from(
+      new Set(
+        leads
+          .map(l => {
+            // Forzamos a que el valor siempre sea un string
+            const name = l.seller_name || l.vendedor || '';
+            return typeof name === 'string' ? name.trim() : '';
+          })
+          .filter(Boolean) // Esto elimina strings vacíos o nulls
+      )
+    );
 
  const roleFilteredLeads = leads.filter(lead => {
   const filterValue = adminVendedorFilter.toLowerCase().trim();
@@ -581,16 +591,17 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               </div>
               {userRole === 'ADMIN' && (
                 <select 
-              value={adminVendedorFilter} 
-              onChange={(e) => setAdminVendedorFilter(e.target.value)}
-            >
-              <option value="todos">Todos</option>
-              {uniqueSellersNames.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
+                value={adminVendedorFilter || 'todos'} 
+                onChange={(e) => setAdminVendedorFilter(e.target.value)}
+                className="p-2 border rounded-xl"
+              >
+                <option value="todos">Todos</option>
+                {Array.isArray(uniqueSellersNames) && uniqueSellersNames.map((name) => (
+                  <option key={name} value={name}>
+                    {name}
+                  </option>
+                ))}
+              </select>
               )}
             </div>
             <div className="flex items-center gap-2">
