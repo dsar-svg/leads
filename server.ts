@@ -76,7 +76,7 @@ async function startServer() {
         numFactura: lead.num_factura,
         fechaVenta: lead.fecha_venta,
         motivoCierre: lead.motivo_cierre, // <--- Coma agregada
-        tiempoPrimerContacto: lead.tiempo_primer_contacto_minutos
+        tiempoPrimerContacto: lead.tiempo_primer_contacto_minutos,
       }));
 
       res.json(mappedLeads);
