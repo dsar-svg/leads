@@ -1041,3 +1041,4 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     </div>
   );
 };
+export default KanbanBoard;
