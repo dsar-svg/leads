@@ -107,6 +107,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   activeTab: propActiveTab,
   setActiveTab: propSetActiveTab,
   onSellersUpdate,
+  sellers,
 }) => {
   const [internalUserRole, setInternalUserRole] = useState<'ADMIN' | 'VENDEDOR'>(() => {
     if (typeof window !== 'undefined') {
@@ -726,12 +727,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 <select 
                   value={selectedVendorStatsFilter} 
                   onChange={(e) => setSelectedVendorStatsFilter(e.target.value)} 
-                  className="..."
+                  className="tu-clase-css"
                 >
                   <option value="Todos">Todos</option>
-                  {/* REEMPLAZA EL MAPEO VIEJO POR ESTE: */}
-                  {Object.values(sellersMap).map(name => (
-                    <option key={name} value={name}>{name}</option>
+                  {/* Ahora esto SÍ tendrá datos */}
+                  {Array.isArray(sellers) && sellers.map((s: any) => (
+                    <option key={s.id} value={s.name}>{s.name}</option>
                   ))}
                 </select>
               </div>
