@@ -122,32 +122,59 @@ async function startServer() {
   });
 
   // 3. ACTUALIZAR LEAD (Adaptado a tus columnas nativas y añadiendo la unificación del motivo de cierre)
+  // 3. ACTUALIZAR LEAD (Corregido alineando los campos exactos de tu phpMyAdmin)
   app.put("/api/leads/:id", async (req, res) => {
     if (!pool) return res.status(503).json({ error: "Database not available" });
     const { id } = req.params;
     const lead = req.body;
     try {
-      // Obtener el status viejo de la base de datos para registrar el historial
+      // Obtener el status viejo de la base de datos para registrar el historial si cambia
       const [oldLeadRows]: any = await pool.query("SELECT status FROM leads WHERE id=?", [id]);
       const oldStatus = oldLeadRows.length > 0 ? oldLeadRows[0].status : null;
 
-      // Actualización directa usando los nombres de columna en snake_case
+      // Consulta corregida usando 'ubicacion_detalle' en lugar de 'ubicacion_detail'
       await pool.query(
         `UPDATE leads SET 
-          name=?, nombre_contacto=?, rif=?, telefono=?, ubicacion_estado=?, ubicacion_detail=?, 
-          categoria_interes=?, canal_origen=?, campana=?, seller_id=?, 
-          status=?, observaciones_vendedor=?, monto_cerrado_usd=?, 
-          num_factura=?, fecha_venta=?, motivo_cierre=?, updated_at=NOW() 
+          name=?, 
+          nombre_contacto=?, 
+          rif=?, 
+          telefono=?, 
+          ubicacion_estado=?, 
+          ubicacion_detalle=?, 
+          categoria_interes=?, 
+          canal_origen=?, 
+          campana=?, 
+          seller_id=?, 
+          status=?, 
+          observaciones_vendedor=?, 
+          monto_cerrado_usd=?, 
+          num_factura=?, 
+          fecha_venta=?, 
+          motivo_cierre=?, 
+          updated_at=NOW() 
         WHERE id=?`,
         [
-          lead.empresa || lead.nombre, lead.nombre, lead.rif, lead.telefono, lead.ubicacionEstado, lead.ubicacionDetalle, 
-          lead.categoriaInteres, lead.canalOrigen, lead.campana, lead.seller_id || null, 
-          lead.estatus || 'NUEVO', lead.notas, Number(lead.valorEstimado || 0), 
-          lead.numFactura, lead.fechaVenta || null, lead.motivoCierre || null, id
+          lead.empresa || lead.nombre || '', 
+          lead.nombre || '', 
+          lead.rif || '', 
+          lead.telefono || '', 
+          lead.ubicacionEstado || '', 
+          lead.ubicacionDetalle || lead.ubicacion_detalle || '', 
+          lead.categoriaInteres || '', 
+          lead.canalOrigen || '', 
+          lead.campana || '', 
+          lead.seller_id || null, 
+          lead.estatus || 'NUEVO', 
+          lead.notas || '', 
+          Number(lead.valorEstimado || 0), 
+          lead.numFactura || '', 
+          lead.fechaVenta || null,
+          lead.motivoCierre || null,
+          id
         ]
       );
 
-      // Log en historial_fases si cambió la etapa comercial
+      // Registrar historial en historial_fases si cambió la etapa comercial de forma legítima
       if (oldStatus !== lead.estatus && lead.estatus) {
         await pool.query(
           "INSERT INTO historial_fases (id_lead, fase_anterior, fase_nueva, fecha_cambio, usuario_cambio) VALUES (?, ?, ?, NOW(), ?)",
@@ -157,8 +184,8 @@ async function startServer() {
 
       res.json({ success: true });
     } catch (error) {
-      console.error("Error actualizando lead:", error);
-      res.status(500).json({ error: "Failed to update lead" });
+      console.error("Error crítico en UPDATE de leads:", error);
+      res.status(500).json({ error: "Failed to update lead in database" });
     }
   });
 
