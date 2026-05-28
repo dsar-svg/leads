@@ -718,7 +718,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           {(() => {
             const currentFilter = userRole === 'ADMIN' ? selectedVendorStatsFilter : selectedVendedor;
             
-            const localStatsLeads = currentFilter === 'Todos' 
+           const localStatsLeads = currentFilter === 'Todos' 
               ? leads 
               : leads.filter(l => (l.vendedor || '').trim().toLowerCase() === currentFilter.trim().toLowerCase());
 
@@ -729,33 +729,26 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             const localTotalClosedCount = localStatsClosedLeads.length;
             const localConversionPercentage = localTotalClosedCount > 0 ? Math.round((localClosedSalesCount / localTotalClosedCount) * 100) : 0;
 
-            const localClosedLeadsWithBothDates = localStatsClosedLeads.filter(l => l.fechaIngreso && l.fechaVenta);
+            // --- CÁLCULO UNIFICADO Y SIN DUPLICADOS ---
+            const localClosedLeadsWithBothDates = localStatsClosedLeads.filter(l => l.fechaIngreso && l.fechaVenta && !isNaN(new Date(l.fechaIngreso).getTime()) && !isNaN(new Date(l.fechaVenta).getTime()));
             const localTotalClosureDays = localClosedLeadsWithBothDates.reduce((sum, l) => sum + Math.round((new Date(l.fechaVenta).getTime() - new Date(l.fechaIngreso).getTime()) / (1000 * 60 * 60 * 24)), 0);
             const localAverageClosureTimeGlobal = localClosedLeadsWithBothDates.length > 0 ? Math.round(localTotalClosureDays / localClosedLeadsWithBothDates.length) : 0;
 
-            // --- LÓGICA DE PROMEDIO Y DESGLOSE EN DÍAS, HORAS Y MINUTOS EXTRAÍDO DE MYSQL ---
-            const leadsConTiempoContacto = localStatsLeads.filter(l => 
-             l.tiempoPrimerContacto !== null && 
-              l.tiempoPrimerContacto !== undefined && 
-              Number(l.tiempoPrimerContacto) > 0
-            );
+            // --- LÓGICA DE TIEMPO DE PRIMER CONTACTO ---
+            const leadsConTiempoContacto = localStatsLeads.filter(l => l.tiempoPrimerContacto !== null && l.tiempoPrimerContacto !== undefined);
             const totalMinutosContacto = leadsConTiempoContacto.reduce((sum, l) => sum + Number(l.tiempoPrimerContacto), 0);
             const promedioMinutosTotales = leadsConTiempoContacto.length > 0 ? Math.round(totalMinutosContacto / leadsConTiempoContacto.length) : 0;
 
-            // Formateador dinámico para transformar minutos de la BD a un formato amigable e informativo
             const formatMinutosADiasHorasMin = (minutosTotales: number): string => {
-            if (minutosTotales <= 0) return '—';
-              
+              if (minutosTotales <= 0) return '—';
               const dias = Math.floor(minutosTotales / (24 * 60));
               const restoDias = minutosTotales % (24 * 60);
               const horas = Math.floor(restoDias / 60);
               const minutos = restoDias % 60;
-
               const partes = [];
               if (dias > 0) partes.push(`${dias}d`);
               if (horas > 0) partes.push(`${horas}h`);
               if (minutos > 0 || partes.length === 0) partes.push(`${minutos}m`);
-            
               return partes.join(' ');
             };
 
