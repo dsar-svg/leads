@@ -159,7 +159,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   useEffect(() => {
     fetch('/api/sellers')
       .then(res => res.json())
-      .then(data => setSellers(data))
+      .then(data => onSellersUpdate(data));
       .catch(err => console.error("Error cargando vendedores:", err));
   }, []);
 
