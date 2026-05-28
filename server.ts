@@ -23,12 +23,12 @@ async function startServer() {
   app.use(express.json());
 
   // API para verificar la salud del backend
-  app.get("/api/health", (req, res) => {
+  ("/api/health", (req, res) => {
     res.json({ status: "ok" });
   });
 
   // DB Connection Test
-  app.get("/api/db-test", async (req, res) => {
+  ("/api/db-test", async (req, res) => {
     if (!pool) return res.status(503).json({ status: "error", message: "Database not configured" });
     try {
       await pool.query("SELECT 1");
