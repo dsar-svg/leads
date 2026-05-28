@@ -580,10 +580,17 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 <input type="text" placeholder="Buscar prospecto..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 pr-4 py-2 text-xs border border-zinc-200 rounded-xl bg-zinc-50 focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-500 w-full" />
               </div>
               {userRole === 'ADMIN' && (
-                <select value={adminVendedorFilter} onChange={(e) => setAdminVendedorFilter(e.target.value)} className="px-3 py-1.5 text-xs bg-white border rounded-xl text-zinc-700 font-semibold focus:outline-none h-[34px]">
-                  <option value="todos">Todos los Vendedores</option>
-                  {uniqueSellers.map(s => <option key={s.id} value={s.name}>{s.name}</option>
-                </select>
+                <select 
+              value={adminVendedorFilter} 
+              onChange={(e) => setAdminVendedorFilter(e.target.value)}
+            >
+              <option value="todos">Todos</option>
+              {uniqueSellersNames.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
               )}
             </div>
             <div className="flex items-center gap-2">
