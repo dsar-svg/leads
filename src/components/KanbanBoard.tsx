@@ -237,12 +237,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHelpOpen, setIsHelpOpen] = useState(false);
 
-  useEffect(() => {
-    if (showCelebration) {
-      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-    }
-  }, [showCelebration]);
-
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formLead, setFormLead] = useState<any>(null);
   const [formError, setFormError] = useState('');
@@ -288,7 +282,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     }
   };
 
-  // Sincronización real e infalible con Express y MySQL con tipado flexible
   const handleStatusChange = async (leadId: string, newStatus: string, closureData?: any) => {
     const leadIdx = leads.findIndex((l: any) => l.id.toString() === leadId.toString());
     if (leadIdx === -1) return;
@@ -674,6 +667,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               Estadísticas de Rendimiento y Conversión
             </h2>
             
+            {/* Si es ADMIN: Muestra el selector global para auditar a todo el equipo */}
             {userRole === 'ADMIN' ? (
               <div className="flex items-center gap-2 mt-3">
                 <span className="text-xs font-bold text-zinc-500 uppercase">Filtrar por vendedor:</span>
@@ -687,6 +681,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 </select>
               </div>
             ) : (
+              /* Si es VENDEDOR: Oculta el selector y fuerza que el filtro sea exclusivamente SU NOMBRE */
               <div className="mt-3">
                 <span className="text-xs font-bold text-zinc-500 bg-zinc-100 px-3 py-1.5 rounded-lg inline-block">
                   👤 Vista Comercial: <span className="text-blue-700 font-extrabold">{selectedVendedor}</span>
@@ -699,7 +694,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             </p>
           </div>
 
-          {/* Bloque lógico de sincronización de datos para estadísticas */}
+          {/* Bloque lógico de sincronización de datos forzada para el vendedor */}
           {(() => {
             const currentFilter = userRole === 'ADMIN' ? selectedVendorStatsFilter : selectedVendedor;
             
@@ -723,12 +718,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             const totalMinutosContacto = leadsConTiempoContacto.reduce((sum, l) => sum + Number(l.tiempoPrimerContacto), 0);
             const promedioMinutosTotales = leadsConTiempoContacto.length > 0 ? Math.round(totalMinutosContacto / leadsConTiempoContacto.length) : 0;
 
-            // Formateador dinámico para transformar minutos a texto legible
+            // Formateador dinámico para transformar minutos de la BD a un formato amigable e informativo
             const formatMinutosADiasHorasMin = (minutosTotales: number): string => {
               if (minutosTotales <= 0) return '—';
               
               const dias = Math.floor(minutosTotales / (24 * 60));
-              const restoDias = minutesTotales % (24 * 60);
+              const restoDias = minutosTotales % (24 * 60);
               const horas = Math.floor(restoDias / 60);
               const minutos = restoDias % 60;
 
@@ -755,7 +750,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     <span className="p-2.5 bg-blue-50 text-blue-650 rounded-lg"><DollarSign className="w-5 h-5" /></span>
                   </div>
                   
-                  {/* TARJETA OPTIMIZADA: TIEMPO DE PRIMER CONTACTO EXACTO */}
+                  {/* TARJETA OPTIMIZADA: TIEMPO DE PRIMER CONTACTO EXACTO EN DÍAS/HORAS/MINUTOS */}
                   <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
                     <div>
                       <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Tiempo Primer Contacto</span>
