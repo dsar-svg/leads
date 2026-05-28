@@ -714,13 +714,16 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             const localAverageClosureTimeGlobal = localClosedLeadsWithBothDates.length > 0 ? Math.round(localTotalClosureDays / localClosedLeadsWithBothDates.length) : 0;
 
             // --- LÓGICA DE PROMEDIO Y DESGLOSE EN DÍAS, HORAS Y MINUTOS EXTRAÍDO DE MYSQL ---
-            const leadsConTiempoContacto = localStatsLeads.filter(l => l.tiempoPrimerContacto !== null && l.tiempoPrimerContacto !== undefined);
-            const totalMinutosContacto = leadsConTiempoContacto.reduce((sum, l) => sum + Number(l.tiempoPrimerContacto), 0);
+            const leadsConTiempoContacto = localStatsLeads.filter(l => 
+              (l.tiempoPrimerContacto !== null && l.tiempoPrimerContacto !== undefined) || 
+              (l.tiempo_primer_contacto_minutos !== null && l.tiempo_primer_contacto_minutos !== undefined)
+            );
+            const totalMinutosContacto = leadsConTiempoContacto.reduce((sum, l) => sum + Number(l.tiempoPrimerContacto || l.tiempo_primer_contacto_minutos || 0), 0);
             const promedioMinutosTotales = leadsConTiempoContacto.length > 0 ? Math.round(totalMinutosContacto / leadsConTiempoContacto.length) : 0;
 
             // Formateador dinámico para transformar minutos de la BD a un formato amigable e informativo
             const formatMinutosADiasHorasMin = (minutosTotales: number): string => {
-              if (minutosTotales <= 0) return '—';
+            if (minutosTotales <= 0) return '—';
               
               const dias = Math.floor(minutosTotales / (24 * 60));
               const restoDias = minutosTotales % (24 * 60);
@@ -731,7 +734,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
               if (dias > 0) partes.push(`${dias}d`);
               if (horas > 0) partes.push(`${horas}h`);
               if (minutos > 0 || partes.length === 0) partes.push(`${minutos}m`);
-
+            
               return partes.join(' ');
             };
 
