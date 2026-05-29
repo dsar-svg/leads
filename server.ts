@@ -107,7 +107,6 @@ async function startServer() {
             rif = COALESCE(?, rif),
             telefono = COALESCE(?, telefono),
             ubicacion_estado = COALESCE(?, ubicacion_estado),
-            ubicacion_detalle = COALESCE(?, ubicacion_detail),
             categoria_interes = COALESCE(?, categoria_interes),
             canal_origen = COALESCE(?, canal_origen),
             status = COALESCE(?, status),
@@ -119,8 +118,8 @@ async function startServer() {
           WHERE id = ?`,
           [
             lead.empresa ?? null, lead.nombre ?? null, lead.rif ?? null,
-            lead.telefono ?? null, lead.ubicacionEstado ?? null,
-            lead.ubicacionDetalle ?? null,
+            lead.telefono ?? null, 
+            lead.ubicacionEstado ?? null,
             lead.categoriaInteres ?? null, lead.canalOrigen ?? null, lead.estatus ?? null,
             lead.notas ?? null,
             lead.valorEstimado != null ? lead.valorEstimado : null,
