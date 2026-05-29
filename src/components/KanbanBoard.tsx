@@ -992,7 +992,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           <div className="bg-white p-6 rounded-2xl border border-zinc-200/80 shadow-xs">
             <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-4">Gestión de Columnas / Fases</h3>
             <div className="space-y-2 mb-6">
-              {columns.filter(c => c.id !== 'CERRADO').map((col, index, arr) => (
+             {columns.map((col, index, arr) => (
                 <div key={col.id} className="flex items-center gap-3 p-3 bg-zinc-50 rounded-xl border border-zinc-100">
                   <span className={`w-3 h-3 rounded-full ${col.color} flex-shrink-0`} />
                   <span className="text-sm font-bold text-zinc-800 flex-1">{col.title}</span>
@@ -1009,7 +1009,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                       className="p-1.5 rounded-lg hover:bg-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed text-zinc-500"
                       title="Bajar"
                     >▼</button>
-                    {col.id !== 'NUEVO' && col.id !== 'CONTACTADO' && (
+                    {col.id !== 'NUEVO' && col.id !== 'CONTACTADO' && col.id !== 'CERRADO' && (
                       <button
                         onClick={() => { if (confirm(`¿Eliminar la fase "${col.title}"?`)) handleRemoveColumn(col.id); }}
                         className="p-1.5 rounded-lg hover:bg-red-100 text-red-400 hover:text-red-600 ml-1"
