@@ -189,7 +189,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const sellersMap = React.useMemo(() => {
     const map: Record<string, string> = {};
     sellers.forEach(s => {
-      map[s.id.toString()] = s.nombre; 
+      if (s?.id != null) map[s.id.toString()] = s.name || s.nombre || ''; 
     });
     return map;
   }, [sellers]);
