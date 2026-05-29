@@ -89,19 +89,26 @@ async function startServer() {
   });
 
       // 3. ACTUALIZAR LEAD
-    app.put("/api/leads/:id", async (req, res) => {
+        app.put("/api/leads/:id", async (req, res) => {
       try {
         const { id } = req.params;
         const lead = req.body;
+
+        // Fetch current status before update
+        const [prevRows]: any = await pool.query("SELECT status FROM leads WHERE id = ?", [id]);
+        const prevStatus = prevRows.length > 0 ? prevRows[0].status : null;
+        const closedStatuses = ['CERRADO', 'CERRADO_VENTA', 'CERRADO_ABANDONADO'];
+        const esCierre = closedStatuses.includes(lead.estatus);
+        const esReactivacion = closedStatuses.includes(prevStatus) && !esCierre;
+
+        if (!esCierre) {
+          lead.motivoCierre = null;
+          lead.fechaVenta = null;
+        }
         if (lead.fechaVenta && lead.fechaVenta.includes('T')) {
-        lead.fechaVenta = lead.fechaVenta.split('T')[0];
-      }
-        const esCierre = ['CERRADO_VENTA', 'CERRADO_ABANDONADO', 'CERRADO'].includes(lead.estatus);
-      if (!esCierre) {
-        lead.motivoCierre = null;
-        lead.fechaVenta = null;
-        lead.valorEstimado = lead.valorEstimado || null;
-      }
+          lead.fechaVenta = lead.fechaVenta.split('T')[0];
+        }
+
         let sellerId: number | null = null;
         if (lead.seller_id != null) {
           sellerId = Number(lead.seller_id);
@@ -109,7 +116,7 @@ async function startServer() {
           const [sellerRows]: any = await pool.query("SELECT id FROM sellers WHERE name = ? LIMIT 1", [lead.vendedor]);
           sellerId = sellerRows.length > 0 ? sellerRows[0].id : null;
         }
-    
+
         await pool.query(
           `UPDATE leads SET
             name = COALESCE(?, name),
@@ -128,8 +135,7 @@ async function startServer() {
           WHERE id = ?`,
           [
             lead.empresa ?? null, lead.nombre ?? null, lead.rif ?? null,
-            lead.telefono ?? null, 
-            lead.ubicacionEstado ?? null,
+            lead.telefono ?? null, lead.ubicacionEstado ?? null,
             lead.categoriaInteres ?? null, lead.canalOrigen ?? null, lead.estatus ?? null,
             lead.notas ?? null,
             lead.valorEstimado != null ? lead.valorEstimado : null,
@@ -138,38 +144,26 @@ async function startServer() {
           ]
         );
 
-        // Recalcular y guardar efectividad de cierre del vendedor
-      if (sellerId) {
-        const [eff]: any = await pool.query(
-          `SELECT 
-            SUM(CASE WHEN status IN ('CERRADO_VENTA','CERRADO') THEN 1 ELSE 0 END) AS won,
-            SUM(CASE WHEN status IN ('CERRADO_VENTA','CERRADO','CERRADO_ABANDONADO') THEN 1 ELSE 0 END) AS total
-          FROM leads WHERE seller_id = ?`,
-          [sellerId]
-        );
-        if (eff[0].total > 0) {
-          const efectividad = Math.round((eff[0].won / eff[0].total) * 100);
+        if (esReactivacion) {
+          await pool.query("UPDATE leads SET reactivaciones = reactivaciones + 1 WHERE id = ?", [id]);
+        }
+
+        if (esCierre && sellerId) {
+          const [allLeads]: any = await pool.query("SELECT status FROM leads WHERE seller_id = ?", [sellerId]);
+          const total = allLeads.length;
+          const cerrados = allLeads.filter((r: any) => closedStatuses.includes(r.status)).length;
+          const efectividad = total > 0 ? Math.round((cerrados / total) * 100) : 0;
           await pool.query(
-            `UPDATE rotacion_caracas_y_carabobo SET efectividad_cierre = ? WHERE seller_id = ?`,
+            "UPDATE rotacion_caracas_y_carabobo SET efectividad_cierre = ? WHERE seller_id = ?",
             [efectividad, sellerId]
           );
         }
-      }
 
-      const eraUnCierre = ['CERRADO_VENTA', 'CERRADO_ABANDONADO', 'CERRADO'];
-      const esActivoAhora = !eraUnCierre.includes(lead.estatus);
-      if (esActivoAhora) {
-        const [prevLead]: any = await pool.query('SELECT status FROM leads WHERE id = ?', [id]);
-        if (prevLead.length > 0 && eraUnCierre.includes(prevLead[0].status)) {
-          await pool.query('UPDATE leads SET reactivaciones = reactivaciones + 1 WHERE id = ?', [id]);
-        }
-      }
-        
         return res.json({ success: true });
       } catch (error: any) {
-      console.error("Error actualizando lead:", error);
-      return res.status(500).json({ error: "Failed to update lead", detail: error?.message || String(error) });
-    }
+        console.error("Error actualizando lead:", error);
+        return res.status(500).json({ error: "Failed to update lead", detail: error.message });
+      }
     });
     
     // 4. ELIMINAR LEAD
