@@ -61,8 +61,9 @@ async function startServer() {
         notas: lead.observaciones_vendedor,
         valorEstimado: Number(lead.monto_cerrado_usd || 0),
         fechaVenta: lead.fecha_venta,
-        fechaIngreso: lead.created_at || lead.fecha_ingreso || null,
-        motivoCierre: lead.motivo_cierre
+        fechaIngreso: lead.created_at ? new Date(lead.created_at).toISOString().split('T')[0] : (lead.fecha_ingreso || null),
+        motivoCierre: lead.motivo_cierre,
+        reactivaciones: Number(lead.reactivaciones || 0)
       }));
 
       return res.json(mappedLeads);
@@ -151,6 +152,15 @@ async function startServer() {
             `UPDATE rotacion_caracas_y_carabobo SET efectividad_cierre = ? WHERE seller_id = ?`,
             [efectividad, sellerId]
           );
+        }
+      }
+
+      const eraUnCierre = ['CERRADO_VENTA', 'CERRADO_ABANDONADO', 'CERRADO'];
+      const esActivoAhora = !eraUnCierre.includes(lead.estatus);
+      if (esActivoAhora) {
+        const [prevLead]: any = await pool.query('SELECT status FROM leads WHERE id = ?', [id]);
+        if (prevLead.length > 0 && eraUnCierre.includes(prevLead[0].status)) {
+          await pool.query('UPDATE leads SET reactivaciones = reactivaciones + 1 WHERE id = ?', [id]);
         }
       }
         
