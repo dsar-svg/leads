@@ -893,6 +893,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     </div>
                   </div>
 
+                  <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs lg:col-span-2 flex flex-col justify-between">
+                    <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-2">Distribución de Leads por Etapa</h3>
                     <div className="space-y-3 flex-1 flex flex-col justify-center">
                       {columns.filter(c => c.id !== 'CERRADO').map((column) => {
                         const amt = localStatsLeads.filter(l => l.estatus === column.id).length;
