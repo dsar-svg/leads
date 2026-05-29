@@ -128,10 +128,10 @@ async function startServer() {
           ]
         );
         return res.json({ success: true });
-      } catch (error) {
-        console.error("Error actualizando lead:", error);
-        return res.status(500).json({ error: "Failed to update lead" });
-      }
+      } catch (error: any) {
+      console.error("Error actualizando lead:", error);
+      return res.status(500).json({ error: "Failed to update lead", detail: error?.message || String(error) });
+    }
     });
     
     // 4. ELIMINAR LEAD
