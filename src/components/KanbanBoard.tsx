@@ -884,19 +884,10 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   </div>
                 </div>
 
-                <
-                  </div>
-
-                  <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
-                  <div>
-                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Leads Reactivados</span>
-                    <span className="text-xl font-black text-violet-700 mt-1 block">{leadsReactivados} <span className="text-xs font-normal text-zinc-500">({tasaReactivacion}%)</span></span>
-                  </div>
-                  <span className="p-2.5 bg-violet-50 text-violet-600 rounded-lg"><RefreshCw className="w-5 h-5" /></span>
-                </div>
+                
 
                   
-                                  <div className="flex flex-col md:flex-row gap-6 justify-center">
+                 <div className="flex flex-col md:flex-row gap-6 justify-center">
                   <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col items-center justify-center flex-1 max-w-xs mx-auto md:mx-0">
                     <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-4 self-start">Tasa de Efectividad</h3>
                     <div className="relative w-40 h-40 flex items-center justify-center">
