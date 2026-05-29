@@ -217,12 +217,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     fetchLeadsFromDB();
   }, []);
 
-  useEffect(() => {
-    if (onSellersUpdate) {
-      const sellers = Array.from(new Set(leads.map(l => (l.vendedor || '').trim()).filter(Boolean)));
-      onSellersUpdate(sellers as string[]);
-    }
-  }, [leads, onSellersUpdate]);
+  
 
   const [columns, setColumns] = useState<Column[]>(() => {
     const defaultCols: Column[] = [
@@ -803,7 +798,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
            const localStatsLeads = currentFilter === 'Todos' 
             ? leads 
             : leads.filter(l => {
-                const sellerName = sellersMap[l.seller_id?.toString()] || "Sin Asignar";
+                const sellerName = sellersMap[l.seller_id?.toString()] || l.vendedor || "Sin Asignar";
                 return sellerName.trim().toLowerCase() === currentFilter.trim().toLowerCase();
               });
 
