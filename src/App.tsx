@@ -17,7 +17,7 @@ import { useState, useEffect } from 'react';
 export default function App() {
   const [currentTime, setCurrentTime] = useState('');
   const [activeTab, setActiveTab] = useState<'board' | 'closed' | 'stats' | 'settings'>('board');
-  const [sellers, setSellers] = useState<string[]>([]);
+  const [sellers, setSellers] = useState<any[]>([]);
 
   const [userRole, setUserRole] = useState<'ADMIN' | 'VENDEDOR'>(() => {
     if (typeof window !== 'undefined') {
@@ -158,7 +158,7 @@ export default function App() {
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-white/60 uppercase px-1">Ver Como</span>
                 <select value={selectedVendedor} onChange={(e) => setSelectedVendedor(e.target.value)} className="w-full bg-white/10 border border-white/20 text-white rounded-lg px-2 py-2 text-xs cursor-pointer">
-                  {sellers.length > 0 ? sellers.map(s => <option key={s} value={s}>{s}</option>) : <option>Sin Asignar</option>}
+                  {sellers.length > 0 ? sellers.map(s => <option key={s.id ?? s} value={s.name ?? s}>{s.name ?? s}</option>) : <option>Sin Asignar</option>}
                 </select>
               </div>
             )}
