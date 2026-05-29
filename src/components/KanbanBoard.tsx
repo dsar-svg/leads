@@ -884,16 +884,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col items-center justify-center">
-                    <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-4 self-start">Tasa de Efectividad</h3>
-                    <div className="relative w-40 h-40 flex items-center justify-center">
-                      <svg className="w-full h-full transform -rotate-90">
-                        <circle cx="80" cy="80" r="65" className="stroke-zinc-100" strokeWidth="10" fill="transparent" />
-                        <circle cx="80" cy="80" r="65" className="stroke-emerald-500 transition-all duration-1000" strokeWidth="12" strokeDasharray={408.4} strokeDashoffset={408.4 - (408.4 * localConversionPercentage) / 100} strokeLinecap="round" fill="transparent" />
-                      </svg>
-                      <div className="absolute flex flex-col items-center justify-center"><span className="text-3xl font-extrabold text-zinc-900">{localConversionPercentage}%</span><span className="text-[10px] text-zinc-400 font-bold uppercase">Eficiencia</span></div>
-                    </div>
+                <
                   </div>
 
                   <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
@@ -905,40 +896,44 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                 </div>
 
                   
-                  <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs lg:col-span-2 flex flex-col justify-between">
-                    <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-2">Distribución de Leads por Etapa</h3>
-                    <div className="space-y-3 flex-1 flex flex-col justify-center">
-                      {columns.filter(c => c.id !== 'CERRADO').map((column) => {
-                        const amt = localStatsLeads.filter(l => l.estatus === column.id).length;
-                        const total = localStatsLeads.length;
-                        const pct = total > 0 ? Math.max((amt / total) * 100, 2) : 2;
-                        return (
-                          <div key={column.id} className="space-y-1">
-                            <div className="flex justify-between text-xs font-semibold"><span className="text-zinc-800 flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${column.color}`} />{column.title}</span><span className="text-zinc-500 font-mono">{amt} leads</span></div>
-                            <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden"><div className={`h-full rounded-full ${column.color}`} style={{ width: `${pct}%` }} /></div>
-                          </div>
-                        );
-                      })}
-                      {(() => {
-                        const total = localStatsLeads.length;
-                        const won = localStatsLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').length;
-                        const lost = localStatsLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO').length;
-                        const pct = (n: number) => total > 0 ? Math.max((n / total) * 100, 2) : 2;
-                        return (
-                          <div className="space-y-1.5 pt-1 border-t border-zinc-100">
-                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Cerrado</span>
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-xs font-semibold"><span className="text-emerald-700 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" />Venta</span><span className="text-zinc-500 font-mono">{won} leads</span></div>
-                              <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${pct(won)}%` }} /></div>
-                            </div>
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-xs font-semibold"><span className="text-red-600 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400" />Abandonado</span><span className="text-zinc-500 font-mono">{lost} leads</span></div>
-                              <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden"><div className="h-full rounded-full bg-red-400" style={{ width: `${pct(lost)}%` }} /></div>
-                            </div>
-                          </div>
-                        );
-                      })()}
+                                  <div className="flex flex-col md:flex-row gap-6 justify-center">
+                  <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col items-center justify-center flex-1 max-w-xs mx-auto md:mx-0">
+                    <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-4 self-start">Tasa de Efectividad</h3>
+                    <div className="relative w-40 h-40 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle cx="80" cy="80" r="65" className="stroke-zinc-100" strokeWidth="10" fill="transparent" />
+                        <circle cx="80" cy="80" r="65" className="stroke-emerald-500 transition-all duration-1000" strokeWidth="12" strokeDasharray={408.4} strokeDashoffset={408.4 - (408.4 * localConversionPercentage) / 100} strokeLinecap="round" fill="transparent" />
+                      </svg>
+                      <div className="absolute flex flex-col items-center justify-center"><span className="text-3xl font-extrabold text-zinc-900">{localConversionPercentage}%</span><span className="text-[10px] text-zinc-400 font-bold uppercase">Eficiencia</span></div>
                     </div>
+                  </div>
+
+                  <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col items-center justify-center flex-1 max-w-xs mx-auto md:mx-0">
+                    <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-4 self-start">Tasa de Reactivación</h3>
+                    <div className="relative w-40 h-40 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle cx="80" cy="80" r="65" className="stroke-zinc-100" strokeWidth="10" fill="transparent" />
+                        <circle cx="80" cy="80" r="65" className="stroke-blue-500 transition-all duration-1000" strokeWidth="12" strokeDasharray={408.4} strokeDashoffset={408.4 - (408.4 * Math.min((() => { const cerrados = localStatsLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO_ABANDONADO' || l.estatus === 'CERRADO').length; const reactivados = localStatsLeads.filter(l => (l as any).reactivaciones > 0).length; return cerrados > 0 ? Math.round((reactivados / cerrados) * 100) : 0; })(), 100)) / 100} strokeLinecap="round" fill="transparent" />
+                      </svg>
+                      <div className="absolute flex flex-col items-center justify-center"><span className="text-3xl font-extrabold text-zinc-900">{Math.min((() => { const cerrados = localStatsLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO_ABANDONADO' || l.estatus === 'CERRADO').length; const reactivados = localStatsLeads.filter(l => (l as any).reactivaciones > 0).length; return cerrados > 0 ? Math.round((reactivados / cerrados) * 100) : 0; })(), 100)}%</span><span className="text-[10px] text-zinc-400 font-bold uppercase">Reactivados</span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col justify-between">
+                  <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-2">Distribución de Leads por Etapa</h3>
+                  <div className="space-y-3 flex-1 flex flex-col justify-center">
+                    {columns.map((column) => {
+                      const statsActiveLeads = localStatsLeads.filter(l => l.estatus !== 'CERRADO_VENTA' && l.estatus !== 'CERRADO_ABANDONADO' && l.estatus !== 'CERRADO');
+                      const amtInCol = statsActiveLeads.filter(l => l.estatus === column.id).length;
+                      const ratio = statsActiveLeads.length > 0 ? (amtInCol / statsActiveLeads.length) * 100 : 0;
+                      return (
+                        <div key={column.id} className="space-y-1">
+                          <div className="flex justify-between text-xs font-semibold"><span className="text-zinc-800 flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${column.color}`} />{column.title}</span><span className="text-zinc-500 font-mono">{amtInCol} leads</span></div>
+                          <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden"><div className={`h-full rounded-full ${column.color}`} style={{ width: `${Math.max(ratio, 2)}%` }} /></div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </>
