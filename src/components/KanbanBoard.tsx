@@ -752,7 +752,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     <td className="p-3 text-right font-bold text-zinc-800">
                       {lead.valorEstimado > 0 ? `$${lead.valorEstimado.toLocaleString()}` : '—'}
                     </td>
-                    <td className="p-3 text-zinc-500">{lead.fechaVenta || '—'}</td>
+                   <td className="p-3 text-zinc-500">{lead.fechaVenta ? new Date(lead.fechaVenta).toLocaleDateString('es-VE', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}</td>
                     <td className="p-3 text-zinc-500 max-w-[180px] truncate">{lead.notas || '—'}</td>
                   </tr>
                 ))}
