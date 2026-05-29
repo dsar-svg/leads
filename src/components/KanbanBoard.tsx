@@ -520,7 +520,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
  const roleFilteredLeads = leads.filter(lead => {
   const filterValue = adminVendedorFilter.toLowerCase().trim();
-  const leadSellerName = (lead.seller_name || '').toLowerCase().trim();
+  const leadSellerName = (lead.seller_name || lead.vendedor || '').toLowerCase().trim();
   
   // 1. Lógica para el ADMIN
   if (userRole === 'ADMIN') {
