@@ -913,8 +913,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
                 <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs flex flex-col justify-between">
                   <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-2">Distribución de Leads por Etapa</h3>
-                  <div className="space-y-3 flex-1 flex flex-col justify-center">
-                    {columns.map((column) => {
+                                    <div className="space-y-3 flex-1 flex flex-col justify-center">
+                    {columns.filter(c => c.id !== 'CERRADO').map((column) => {
                       const statsActiveLeads = localStatsLeads.filter(l => l.estatus !== 'CERRADO_VENTA' && l.estatus !== 'CERRADO_ABANDONADO' && l.estatus !== 'CERRADO');
                       const amtInCol = statsActiveLeads.filter(l => l.estatus === column.id).length;
                       const ratio = statsActiveLeads.length > 0 ? (amtInCol / statsActiveLeads.length) * 100 : 0;
@@ -925,6 +925,17 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                         </div>
                       );
                     })}
+                    <div className="space-y-1 pt-1">
+                      <div className="text-xs font-bold text-zinc-500 uppercase tracking-wider pb-1">Cierre</div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs font-semibold"><span className="text-zinc-800 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" />Venta</span><span className="text-zinc-500 font-mono">{localStatsLeads.filter(l => l.estatus === 'CERRADO_VENTA').length} leads</span></div>
+                        <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${localStatsLeads.length > 0 ? Math.max((localStatsLeads.filter(l => l.estatus === 'CERRADO_VENTA').length / localStatsLeads.length) * 100, localStatsLeads.filter(l => l.estatus === 'CERRADO_VENTA').length > 0 ? 2 : 0) : 0}%` }} /></div>
+                      </div>
+                      <div className="space-y-1 mt-1">
+                        <div className="flex justify-between text-xs font-semibold"><span className="text-zinc-800 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-500" />Abandonado</span><span className="text-zinc-500 font-mono">{localStatsLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO' || l.estatus === 'CERRADO').length} leads</span></div>
+                        <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden"><div className="h-full rounded-full bg-red-500" style={{ width: `${localStatsLeads.length > 0 ? Math.max((localStatsLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO' || l.estatus === 'CERRADO').length / localStatsLeads.length) * 100, localStatsLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO' || l.estatus === 'CERRADO').length > 0 ? 2 : 0) : 0}%` }} /></div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </>
