@@ -709,41 +709,58 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
         </div>
       )}
 
-      {activeTab === 'closed' && (
-  <div className="bg-white rounded-2xl border border-zinc-200/80 p-5 space-y-4 shadow-xs">
-    <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2"><Archive className="w-5 h-5 text-zinc-500" /> Historial de Rendimiento</h2>
-    <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse text-xs">
-        <thead>
-          <tr className="border-b text-zinc-450 uppercase font-bold tracking-wider text-[10px] bg-zinc-50">
-            <th className="p-3">Vendedor</th>
-            <th className="p-3">Total Leads</th>
-            <th className="p-3">Activos</th>
-            <th className="p-3 text-emerald-700">Ganados</th>
-            <th className="p-3 text-zinc-400">Perdidos</th>
-            <th className="p-3 text-right">Recaudado</th>
-            <th className="p-3 text-center">Tasa</th>
-            <th className="p-3 text-center">Avg. Cierre</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-zinc-100">
-          {(userRole === 'ADMIN' ? sellersPerformance : sellersPerformance.filter(s => s.vName.toLowerCase().trim() === (selectedVendedor || '').toLowerCase().trim())).map(seller => (
-            <tr key={seller.vName} className="hover:bg-zinc-50/45 transition-colors text-zinc-700">
-              <td className="p-3 font-bold text-zinc-900">{seller.vName}</td>
-              <td className="p-3 font-semibold">{seller.total}</td>
-              <td className="p-3 font-medium text-zinc-500">{seller.vActive}</td>
-              <td className="p-3 font-bold text-emerald-700">{seller.vWon}</td>
-              <td className="p-3 text-zinc-400">{seller.vLost}</td>
-              <td className="p-3 text-right font-bold text-zinc-800">${seller.vRev.toLocaleString()}</td>
-              <td className="p-3 text-center"><span className="px-2 py-0.5 bg-zinc-100 rounded text-zinc-800 font-bold font-mono">{seller.vRate}%</span></td>
-              <td className="p-3 text-center font-semibold text-zinc-600">{seller.vAverageClosureTime > 0 ? `${seller.vAverageClosureTime} días` : '—'}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-)}
+            {activeTab === 'closed' && (
+        <div className="bg-white rounded-2xl border border-zinc-200/80 p-5 space-y-4 shadow-xs">
+          <h2 className="text-lg font-bold text-zinc-950 flex items-center gap-2">
+            <Archive className="w-5 h-5 text-zinc-500" /> Historial de Cierres
+          </h2>
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b text-zinc-450 uppercase font-bold tracking-wider text-[10px] bg-zinc-50">
+                  <th className="p-3">Empresa</th>
+                  <th className="p-3">Contacto</th>
+                  <th className="p-3">Teléfono</th>
+                  {userRole === 'ADMIN' && <th className="p-3">Vendedor</th>}
+                  <th className="p-3">Motivo</th>
+                  <th className="p-3 text-right">Monto USD</th>
+                  <th className="p-3">Fecha Cierre</th>
+                  <th className="p-3">Notas</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-zinc-100">
+                {closedLeads.length === 0 ? (
+                  <tr><td colSpan={userRole === 'ADMIN' ? 8 : 7} className="p-6 text-center text-zinc-400">Sin cierres registrados.</td></tr>
+                ) : closedLeads.map(lead => (
+                  <tr key={lead.id} className="hover:bg-zinc-50/45 transition-colors text-zinc-700">
+                    <td className="p-3 font-bold text-zinc-900">
+                      {lead.empresa}
+                      <div className="text-[10px] font-mono text-zinc-400">#{lead.id}</div>
+                    </td>
+                    <td className="p-3">{lead.nombre}</td>
+                    <td className="p-3 font-mono text-xs">{lead.telefono}</td>
+                    {userRole === 'ADMIN' && <td className="p-3 font-semibold">{lead.vendedor || 'Sin asignar'}</td>}
+                    <td className="p-3">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        lead.estatus === 'CERRADO_VENTA' || lead.estatus === 'CERRADO'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : 'bg-red-100 text-red-600'
+                      }`}>
+                        {lead.estatus === 'CERRADO_VENTA' || lead.estatus === 'CERRADO' ? '✓ Venta' : '✗ Abandonado'}
+                      </span>
+                    </td>
+                    <td className="p-3 text-right font-bold text-zinc-800">
+                      {lead.valorEstimado > 0 ? `$${lead.valorEstimado.toLocaleString()}` : '—'}
+                    </td>
+                    <td className="p-3 text-zinc-500">{lead.fechaVenta || '—'}</td>
+                    <td className="p-3 text-zinc-500 max-w-[180px] truncate">{lead.notas || '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* 7. TAB 3: ESTADISTICAS Y KPIS GENERALES (PROTEGIDO POR ROL DE ACCESO) */}
       {activeTab === 'stats' && (
