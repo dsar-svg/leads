@@ -96,7 +96,7 @@ interface KanbanBoardProps {
   setSelectedVendedor?: (vendedor: string) => void;
   activeTab?: 'board' | 'closed' | 'stats' | 'settings';
   setActiveTab?: (tab: 'board' | 'closed' | 'stats' | 'settings') => void;
-  onSellersUpdate?: (sellers: string[]) => void;
+  onSellersUpdate?: (sellers: any[]) => void;
   sellers: any[];
 }
 
