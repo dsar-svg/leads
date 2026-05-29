@@ -91,7 +91,9 @@ async function startServer() {
       try {
         const { id } = req.params;
         const lead = req.body;
-    
+        if (lead.fechaVenta && lead.fechaVenta.includes('T')) {
+        lead.fechaVenta = lead.fechaVenta.split('T')[0];
+      }
         let sellerId: number | null = null;
         if (lead.seller_id != null) {
           sellerId = Number(lead.seller_id);
