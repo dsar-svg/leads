@@ -94,6 +94,12 @@ async function startServer() {
         if (lead.fechaVenta && lead.fechaVenta.includes('T')) {
         lead.fechaVenta = lead.fechaVenta.split('T')[0];
       }
+        const esCierre = ['CERRADO_VENTA', 'CERRADO_ABANDONADO', 'CERRADO'].includes(lead.estatus);
+      if (!esCierre) {
+        lead.motivoCierre = null;
+        lead.fechaVenta = null;
+        lead.valorEstimado = lead.valorEstimado || null;
+      }
         let sellerId: number | null = null;
         if (lead.seller_id != null) {
           sellerId = Number(lead.seller_id);
@@ -114,8 +120,8 @@ async function startServer() {
             status = COALESCE(?, status),
             observaciones_vendedor = COALESCE(?, observaciones_vendedor),
             monto_cerrado_usd = COALESCE(?, monto_cerrado_usd),
-            fecha_venta = COALESCE(?, fecha_venta),
-            motivo_cierre = COALESCE(?, motivo_cierre),
+            fecha_venta = ?,
+            motivo_cierre = ?,
             seller_id = ?
           WHERE id = ?`,
           [
