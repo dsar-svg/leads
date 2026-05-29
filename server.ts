@@ -62,6 +62,7 @@ async function startServer() {
         valorEstimado: Number(lead.monto_cerrado_usd || 0),
         fechaVenta: lead.fecha_venta,
         fechaIngreso: lead.created_at ? new Date(lead.created_at).toISOString().split('T')[0] : (lead.fecha_ingreso || null),
+        tiempoPrimerContacto: lead.tiempo_primer_contacto != null ? Number(lead.tiempo_primer_contacto) : null,
         motivoCierre: lead.motivo_cierre,
         reactivaciones: Number(lead.reactivaciones || 0)
       }));
