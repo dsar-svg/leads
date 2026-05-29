@@ -893,45 +893,35 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     </div>
                   </div>
 
-                                      <div className="space-y-3 flex-1 flex flex-col justify-center">
+                    <div className="space-y-3 flex-1 flex flex-col justify-center">
+                      {columns.filter(c => c.id !== 'CERRADO').map((column) => {
+                        const amt = localStatsLeads.filter(l => l.estatus === column.id).length;
+                        const total = localStatsLeads.length;
+                        const pct = total > 0 ? Math.max((amt / total) * 100, 2) : 2;
+                        return (
+                          <div key={column.id} className="space-y-1">
+                            <div className="flex justify-between text-xs font-semibold"><span className="text-zinc-800 flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${column.color}`} />{column.title}</span><span className="text-zinc-500 font-mono">{amt} leads</span></div>
+                            <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden"><div className={`h-full rounded-full ${column.color}`} style={{ width: `${pct}%` }} /></div>
+                          </div>
+                        );
+                      })}
                       {(() => {
                         const total = localStatsLeads.length;
-                        const ratio = (n: number) => total > 0 ? Math.max((n / total) * 100, 2) : 2;
-                        const nonClosedCols = columns.filter(c => c.id !== 'CERRADO');
                         const won = localStatsLeads.filter(l => l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO').length;
                         const lost = localStatsLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO').length;
+                        const pct = (n: number) => total > 0 ? Math.max((n / total) * 100, 2) : 2;
                         return (
-                          <>
-                            {nonClosedCols.map((column) => {
-                              const amt = localStatsLeads.filter(l => l.estatus === column.id).length;
-                              return (
-                                <div key={column.id} className="space-y-1">
-                                  <div className="flex justify-between text-xs font-semibold">
-                                    <span className="text-zinc-800 flex items-center gap-1.5"><span className={`w-2 h-2 rounded-full ${column.color}`} />{column.title}</span>
-                                    <span className="text-zinc-500 font-mono">{amt} leads</span>
-                                  </div>
-                                  <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden"><div className={`h-full rounded-full ${column.color}`} style={{ width: `${ratio(amt)}%` }} /></div>
-                                </div>
-                              );
-                            })}
-                            <div className="space-y-1.5 pt-1 border-t border-zinc-100">
-                              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">Cerrado</span>
-                              <div className="space-y-1">
-                                <div className="flex justify-between text-xs font-semibold">
-                                  <span className="text-emerald-700 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" />Venta</span>
-                                  <span className="text-zinc-500 font-mono">{won} leads</span>
-                                </div>
-                                <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${ratio(won)}%` }} /></div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="flex justify-between text-xs font-semibold">
-                                  <span className="text-red-600 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400" />Abandonado</span>
-                                  <span className="text-zinc-500 font-mono">{lost} leads</span>
-                                </div>
-                                <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden"><div className="h-full rounded-full bg-red-400" style={{ width: `${ratio(lost)}%` }} /></div>
-                              </div>
+                          <div className="space-y-1.5 pt-1 border-t border-zinc-100">
+                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Cerrado</span>
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs font-semibold"><span className="text-emerald-700 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-emerald-500" />Venta</span><span className="text-zinc-500 font-mono">{won} leads</span></div>
+                              <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden"><div className="h-full rounded-full bg-emerald-500" style={{ width: `${pct(won)}%` }} /></div>
                             </div>
-                          </>
+                            <div className="space-y-1">
+                              <div className="flex justify-between text-xs font-semibold"><span className="text-red-600 flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-red-400" />Abandonado</span><span className="text-zinc-500 font-mono">{lost} leads</span></div>
+                              <div className="w-full bg-zinc-100 rounded-full h-2.5 overflow-hidden"><div className="h-full rounded-full bg-red-400" style={{ width: `${pct(lost)}%` }} /></div>
+                            </div>
+                          </div>
                         );
                       })()}
                     </div>
