@@ -135,6 +135,25 @@ async function startServer() {
             sellerId, id
           ]
         );
+
+        // Recalcular y guardar efectividad de cierre del vendedor
+      if (sellerId) {
+        const [eff]: any = await pool.query(
+          `SELECT 
+            SUM(CASE WHEN status IN ('CERRADO_VENTA','CERRADO') THEN 1 ELSE 0 END) AS won,
+            SUM(CASE WHEN status IN ('CERRADO_VENTA','CERRADO','CERRADO_ABANDONADO') THEN 1 ELSE 0 END) AS total
+          FROM leads WHERE seller_id = ?`,
+          [sellerId]
+        );
+        if (eff[0].total > 0) {
+          const efectividad = Math.round((eff[0].won / eff[0].total) * 100);
+          await pool.query(
+            `UPDATE rotacion_caracas_y_carabobo SET efectividad_cierre = ? WHERE seller_id = ?`,
+            [efectividad, sellerId]
+          );
+        }
+      }
+        
         return res.json({ success: true });
       } catch (error: any) {
       console.error("Error actualizando lead:", error);
