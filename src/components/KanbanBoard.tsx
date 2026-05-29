@@ -727,7 +727,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
           </tr>
         </thead>
         <tbody className="divide-y divide-zinc-100">
-          {sellersPerformance.map(seller => (
+          {(userRole === 'ADMIN' ? sellersPerformance : sellersPerformance.filter(s => s.vName.toLowerCase().trim() === (selectedVendedor || '').toLowerCase().trim())).map(seller => (
             <tr key={seller.vName} className="hover:bg-zinc-50/45 transition-colors text-zinc-700">
               <td className="p-3 font-bold text-zinc-900">{seller.vName}</td>
               <td className="p-3 font-semibold">{seller.total}</td>
@@ -880,7 +880,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-2">Distribución de Leads por Etapa</h3>
                     <div className="space-y-3 flex-1 flex flex-col justify-center">
                       {columns.map((column) => {
-                        const statsActiveLeads = localStatsLeads.filter(l => l.estatus !== 'CERRADO_VENTA' && l.estatus !== 'CERRADO_ABANDONADO' && l.estatus !== 'CERRADO');
+                        const statsActiveLeads = localStatsLeads.filter(l => l.estatus !== 'CERRADO_VENTA' && l.estatus !== 'CERRADO_ABANDONADO');
                         const amtInCol = statsActiveLeads.filter(l => l.estatus === column.id).length;
                         const ratio = statsActiveLeads.length > 0 ? (amtInCol / statsActiveLeads.length) * 100 : 0;
                         return (
@@ -900,7 +900,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       )}
           {/* Tabla General de Rendimiento Oficial por Vendedores (ESTRICTAMENTE EXCLUSIVA PARA ADMIN) */}
         {/* Tabla de Rendimiento Oficial */}
-{userRole === 'ADMIN' && (
+{userRole === 'ADMIN' && activeTab === 'stats' && (
   <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs space-y-4">
     <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest">RENDIMIENTO POR VENDEDORES</h3>
     <div className="overflow-x-auto">
