@@ -825,6 +825,9 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             const localClosedAbandonedCount = localStatsClosedLeads.filter(l => l.estatus === 'CERRADO_ABANDONADO').length;
             const localTotalClosedCount = localStatsClosedLeads.length;
             const localConversionPercentage = localTotalClosedCount > 0 ? Math.round((localClosedSalesCount / localTotalClosedCount) * 100) : 0;
+            const leadsReactivados = localStatsLeads.filter(l => (l.reactivaciones || 0) > 0).length;
+            const tasaReactivacion = localStatsLeads.length > 0 ? Math.round((leadsReactivados / localStatsLeads.length) * 100) : 0;
+            
 
             // --- CÁLCULO UNIFICADO Y SIN DUPLICADOS ---
             const localClosedLeadsWithBothDates = localStatsClosedLeads.filter(l => l.fechaIngreso && l.fechaVenta && !isNaN(new Date(l.fechaIngreso).getTime()) && !isNaN(new Date(l.fechaVenta).getTime()));
@@ -893,6 +896,15 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
                     </div>
                   </div>
 
+                  <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Leads Reactivados</span>
+                    <span className="text-xl font-black text-violet-700 mt-1 block">{leadsReactivados} <span className="text-xs font-normal text-zinc-500">({tasaReactivacion}%)</span></span>
+                  </div>
+                  <span className="p-2.5 bg-violet-50 text-violet-600 rounded-lg"><RefreshCw className="w-5 h-5" /></span>
+                </div>
+
+                  
                   <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs lg:col-span-2 flex flex-col justify-between">
                     <h3 className="text-xs font-bold text-zinc-650 uppercase tracking-widest pb-2">Distribución de Leads por Etapa</h3>
                     <div className="space-y-3 flex-1 flex flex-col justify-center">
