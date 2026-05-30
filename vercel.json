@@ -3,18 +3,20 @@
   "builds": [
     {
       "src": "server.ts",
-      "use": "@vercel/node",
-      "config": { "distDir": "dist" }
+      "use": "@vercel/node"
     },
     {
-      "src": "vite.config.ts",
+      "src": "/",
       "use": "@vercel/static-build",
-      "config": { "distDir": "dist" }
+      "config": {
+        "buildCommand": "npm run vercel-build",
+        "distDir": "dist"
+      }
     }
   ],
   "routes": [
     { "src": "/api/(.*)", "dest": "server.ts" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/(.*)", "dest": "/" }
   ],
   "env": {
     "DATABASE_URL": "",
