@@ -121,3 +121,10 @@ export const INITIAL_LEADS: Lead[] = [
     categoriaInteres: 'Software'
   }
 ];
+
+// Mock sellers data
+export const MOCK_SELLERS = [
+  { id: 1, name: 'Carlos Pérez', email: 'carlos.perez@example.com' },
+  { id: 2, name: 'Maria Gómez', email: 'maria.gomez@example.com' },
+  { id: 3, name: 'Ana López', email: 'ana.lopez@example.com' }
+];
