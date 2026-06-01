@@ -77,18 +77,22 @@ async function startServer() {
 
   // 2. CREAR LEAD
   app.post("/api/leads", async (req, res) => {
-    try {
-      const lead = req.body;
-      const [result]: any = await pool.query(
-        `INSERT INTO leads (name, nombre_contacto, rif, telefono, ubicacion_estado, categoria_interes, status, seller_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-        [lead.empresa, lead.nombre, lead.rif, lead.telefono, lead.ubicacionEstado, lead.categoriaInteres, lead.estatus || 'NUEVO', lead.seller_id || null]
-      );
-      return res.status(201).json({ id: result.insertId.toString() });
-    } catch (error) {
-      return res.status(500).json({ error: "Failed to create lead" });
+  try {
+    const lead = req.body;
+    let sellerId = lead.seller_id || null;
+    if (!sellerId && lead.vendedor && lead.vendedor !== 'Sin Asignar') {
+      const [sellerRows]: any = await pool.query("SELECT id FROM sellers WHERE name = ? LIMIT 1", [lead.vendedor]);
+      sellerId = sellerRows.length > 0 ? sellerRows[0].id : null;
     }
-  });
-
+    const [result]: any = await pool.query(
+      `INSERT INTO leads (name, nombre_contacto, rif, telefono, ubicacion_estado, categoria_interes, status, seller_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [lead.empresa, lead.nombre, lead.rif, lead.telefono, lead.ubicacionEstado, lead.categoriaInteres, lead.estatus || 'NUEVO', sellerId]
+    );
+    return res.status(201).json({ id: result.insertId.toString() });
+  } catch (error) {
+    return res.status(500).json({ error: "Failed to create lead" });
+  }
+});
       // 3. ACTUALIZAR LEAD
         app.put("/api/leads/:id", async (req, res) => {
       try {
@@ -109,7 +113,7 @@ async function startServer() {
         }
 
         if (esCierre) {
-        lead.fechaVenta = new Date().toISOString();
+        lead.fechaVenta = new Date().toISOString().slice(0, 19).replace('T', ' ');
         }
 
         let sellerId: number | null = null;
