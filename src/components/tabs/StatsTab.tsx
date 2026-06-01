@@ -118,11 +118,11 @@ export const StatsTab: React.FC<StatsTabProps> = ({
 
             const localClosedLeadsWithBothDates = localStatsLeads.filter(l => 
               (l.estatus === 'CERRADO_VENTA' || l.estatus === 'CERRADO') &&
-              l.fechaIngreso && l.fechaVenta && 
+              l.fechaIngreso && l.fechaVentaISO && 
               !isNaN(new Date(l.fechaIngreso).getTime()) && 
-              !isNaN(new Date(l.fechaVenta).getTime())
+              !isNaN(new Date(l.fechaVentaISO).getTime())
             );
-            const localTotalClosureMinutes = localClosedLeadsWithBothDates.reduce((sum, l) => sum + Math.max(0, Math.round((new Date(l.fechaVenta).getTime() - new Date(l.fechaIngreso).getTime()) / (1000 * 60))), 0);
+            const localTotalClosureMinutes = localClosedLeadsWithBothDates.reduce((sum, l) => sum + Math.max(0, Math.round((new Date(l.fechaVentaISO).getTime() - new Date(l.fechaIngreso).getTime()) / (1000 * 60))), 0);
             const localAverageClosureTimeGlobal = localClosedLeadsWithBothDates.length > 0 ? Math.round(localTotalClosureMinutes / localClosedLeadsWithBothDates.length) : 0;
 
             const leadsConTiempoContacto = localStatsLeads.filter(l => l.tiempoPrimerContacto !== null && l.tiempoPrimerContacto !== undefined);
