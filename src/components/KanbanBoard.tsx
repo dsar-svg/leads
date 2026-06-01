@@ -74,11 +74,6 @@ import {
   updateLeadInSheet,
   appendLeadToSheet
 } from '../api';
-import { 
-  googleSignIn, 
-  logout, 
-  initAuth 
-} from '../firebaseAuth';
 
 const COLOR_PRESETS = [
   { color: 'bg-indigo-500', bgClass: 'bg-[#faf5ff]', borderClass: 'border-indigo-200', accentClass: 'bg-indigo-100', textClass: 'text-indigo-700' },
