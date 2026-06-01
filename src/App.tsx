@@ -155,30 +155,32 @@ export default function App() {
                 <button onClick={() => {setUserRole('VENDEDOR'); setActiveTab('board');}} className={`flex-1 py-1.5 text-xs font-semibold rounded-md ${userRole === 'VENDEDOR' ? 'bg-white text-[#014ACD]' : 'text-white/60'}`}>Vendedor</button>
               </div>
             </div>
-            {userRole === 'VENDEDOR' && (
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-white/60 uppercase px-1">Ver Como</span>
-                <select value={selectedVendedor} onChange={(e) => setSelectedVendedor(e.target.value)} className="w-full bg-white/10 border border-white/20 text-white rounded-lg px-2 py-2 text-xs cursor-pointer">
-                  {sellers.length > 0 ? sellers.map(s => <option key={s.id ?? s} value={s.name ?? s}>{s.name ?? s}</option>) : <option>Sin Asignar</option>}
-                </select>
+                       {userRole === 'VENDEDOR' && (
+              <div className="space-y-2">
+                <div className="space-y-1">
+                  <span className="text-[10px] font-bold text-white/60 uppercase px-1">Ver Como</span>
+                  <select value={selectedVendedor} onChange={(e) => setSelectedVendedor(e.target.value)} className="w-full bg-white/10 border border-white/20 text-white rounded-lg px-2 py-2 text-xs cursor-pointer">
+                    {sellers.length > 0 ? sellers.map(s => <option key={s.id ?? s} value={s.name ?? s}>{s.name ?? s}</option>) : <option>Sin Asignar</option>}
+                  </select>
+                </div>
+                {vendorRank && (
+                  <div className="px-3 py-2.5 rounded-xl bg-white/10 border border-white/10">
+                    <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest block mb-1">Tu Ranking</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{vendorRank.rank === 0 ? '🥇' : vendorRank.rank === 1 ? '🥈' : vendorRank.rank === 2 ? '🥉' : '🏅'}</span>
+                        <div>
+                          <span className="text-white font-extrabold text-sm">#{vendorRank.rank + 1}</span>
+                          {vendorRank.tier && <span className="text-white/60 text-[10px] font-bold ml-1.5">{vendorRank.tier}</span>}
+                        </div>
+                      </div>
+                      <span className={`text-sm font-black ${vendorRank.rate >= 100 ? 'text-amber-300' : vendorRank.rate >= 80 ? 'text-slate-300' : vendorRank.rate >= 60 ? 'text-orange-300' : 'text-white/50'}`}>
+                        {vendorRank.rate}%
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
-              {userRole === 'VENDEDOR' && vendorRank && (
-  <div className="mt-2 px-3 py-2.5 rounded-xl bg-white/10 border border-white/10">
-    <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest block mb-1">Tu Ranking</span>
-    <div className="flex items-center justify-between gap-2">
-      <div className="flex items-center gap-2">
-        <span className="text-lg">{vendorRank.rank === 0 ? '🥇' : vendorRank.rank === 1 ? '🥈' : vendorRank.rank === 2 ? '🥉' : '🏅'}</span>
-        <div>
-          <span className="text-white font-extrabold text-sm">#{vendorRank.rank + 1}</span>
-          {vendorRank.tier && <span className="text-white/60 text-[10px] font-bold ml-1.5">{vendorRank.tier}</span>}
-        </div>
-      </div>
-      <span className={`text-sm font-black ${vendorRank.rate >= 100 ? 'text-amber-300' : vendorRank.rate >= 80 ? 'text-slate-300' : vendorRank.rate >= 60 ? 'text-orange-300' : 'text-white/50'}`}>
-        {vendorRank.rate}%
-      </span>
-    </div>
-  </div>
-)}
             )}
           </div>
         </div>
