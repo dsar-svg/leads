@@ -199,6 +199,22 @@ async function startServer() {
     });
   }
 
+app.post('/api/login', async (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Faltan credenciales' });
+  try {
+    const [rows]: any = await pool.query(
+      'SELECT id, name, role FROM sellers WHERE name = ? AND password = ? AND activo = 1',
+      [username, password]
+    );
+    if (rows.length === 0) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    const user = rows[0];
+    const userRole = user.role === 8 ? 'ADMIN' : 'VENDEDOR';
+    res.json({ id: user.id, name: user.name, role: userRole });
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+  
   app.listen(PORT, "0.0.0.0", () => console.log(`Server running on port ${PORT}`));
 }
 
