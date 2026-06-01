@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-
+import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { KanbanBoard } from './components/KanbanBoard';
 import { LoginScreen } from './components/LoginScreen';
 import { 
@@ -54,6 +54,9 @@ export default function App() {
     setSession(null);
   };
 
+  const [showChangePassword, setShowChangePassword] = useState(false);
+
+  
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -191,6 +194,14 @@ export default function App() {
                 </div>
               </div>
             )}
+            
+            <button
+            onClick={() => setShowChangePassword(true)}
+            className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors text-xs font-bold"
+          >
+            <Lock className="w-4 h-4" />
+            Cambiar Contraseña
+          </button>
 
             <button
               onClick={handleLogout}
@@ -218,6 +229,11 @@ export default function App() {
           />
         </main>
 
+        
+        {showChangePassword && session && (
+        <ChangePasswordModal userId={session.id} onClose={() => setShowChangePassword(false)} />
+      )}
+        
         <footer className="bg-white border-t border-zinc-200/60 py-4 text-xs text-zinc-400 text-center">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p>© {new Date().getFullYear()} ArtemisCRM. Diseñado para integraciones robustas de Webhook con n8n.</p>
