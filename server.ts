@@ -100,6 +100,7 @@ async function startServer() {
         const closedStatuses = ['CERRADO', 'CERRADO_VENTA', 'CERRADO_ABANDONADO'];
         const esCierre = closedStatuses.includes(lead.estatus);
         const esReactivacion = closedStatuses.includes(prevStatus) && !esCierre;
+        const esPrimerContacto = prevStatus === 'NUEVO' && lead.estatus === 'CONTACTADO';
 
         if (!esCierre) {
           lead.motivoCierre = null;
@@ -148,6 +149,17 @@ async function startServer() {
           await pool.query("UPDATE leads SET reactivaciones = reactivaciones + 1 WHERE id = ?", [id]);
         }
 
+        if (esPrimerContacto) {
+        const [leadRows]: any = await pool.query("SELECT created_at, tiempo_primer_contacto_minutos FROM leads WHERE id = ?", [id]);
+        if (leadRows.length > 0 && leadRows[0].tiempo_primer_contacto_minutos == null) {
+          const createdAt = new Date(leadRows[0].created_at);
+          const ahora = new Date();
+          const minutos = Math.round((ahora.getTime() - createdAt.getTime()) / (1000 * 60));
+          await pool.query("UPDATE leads SET tiempo_primer_contacto_minutos = ? WHERE id = ?", [minutos, id]);
+        }
+      }
+
+        
         if (esCierre && sellerId) {
           const [allLeads]: any = await pool.query("SELECT status FROM leads WHERE seller_id = ?", [sellerId]);
           const total = allLeads.length;
