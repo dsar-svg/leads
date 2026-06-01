@@ -122,7 +122,7 @@ export const StatsTab: React.FC<StatsTabProps> = ({
               !isNaN(new Date(l.fechaIngreso).getTime()) && 
               !isNaN(new Date(l.fechaVenta).getTime())
             );
-            const localTotalClosureMinutes = localClosedLeadsWithBothDates.reduce((sum, l) => sum + Math.round((new Date(l.fechaVenta).getTime() - new Date(l.fechaIngreso).getTime()) / (1000 * 60)), 0);
+            const localTotalClosureMinutes = localClosedLeadsWithBothDates.reduce((sum, l) => sum + Math.max(0, Math.round((new Date(l.fechaVenta).getTime() - new Date(l.fechaIngreso).getTime()) / (1000 * 60))), 0);
             const localAverageClosureTimeGlobal = localClosedLeadsWithBothDates.length > 0 ? Math.round(localTotalClosureMinutes / localClosedLeadsWithBothDates.length) : 0;
 
             const leadsConTiempoContacto = localStatsLeads.filter(l => l.tiempoPrimerContacto !== null && l.tiempoPrimerContacto !== undefined);
