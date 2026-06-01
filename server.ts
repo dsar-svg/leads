@@ -111,10 +111,6 @@ async function startServer() {
         if (esCierre) {
         lead.fechaVenta = new Date().toISOString();
         }
-        
-        if (lead.fechaVenta && lead.fechaVenta.includes('T')) {
-          lead.fechaVenta = lead.fechaVenta.split('T')[0];
-        }
 
         let sellerId: number | null = null;
         if (lead.seller_id != null) {
