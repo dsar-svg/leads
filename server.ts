@@ -199,6 +199,23 @@ async function startServer() {
     });
   }
 
+  app.put('/api/sellers/:id/password', async (req, res) => {
+  const { id } = req.params;
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Faltan datos' });
+  try {
+    const [rows]: any = await pool.query(
+      'SELECT id FROM sellers WHERE id = ? AND password = ?',
+      [id, currentPassword]
+    );
+    if (rows.length === 0) return res.status(401).json({ error: 'Contraseña actual incorrecta' });
+    await pool.query('UPDATE sellers SET password = ? WHERE id = ?', [newPassword, id]);
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+});
+  
   app.post('/api/login', async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Faltan credenciales' });
