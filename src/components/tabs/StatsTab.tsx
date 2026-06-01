@@ -130,7 +130,8 @@ export const StatsTab: React.FC<StatsTabProps> = ({
             const promedioMinutosTotales = leadsConTiempoContacto.length > 0 ? Math.round(totalMinutosContacto / leadsConTiempoContacto.length) : 0;
 
             const formatMinutosADiasHorasMin = (minutosTotales: number): string => {
-              if (minutosTotales <= 0) return '—';
+              if (minutosTotales < 0) return '—';
+              if (minutosTotales === 0) return 'Mismo día';
               const dias = Math.floor(minutosTotales / (24 * 60));
               const restoDias = minutosTotales % (24 * 60);
               const horas = Math.floor(restoDias / 60);
