@@ -204,8 +204,8 @@ async function startServer() {
     if (!username || !password) return res.status(400).json({ error: 'Faltan credenciales' });
     try {
       const [rows]: any = await pool.query(
-        'SELECT id, name, role FROM sellers WHERE name = ? AND password = ? AND activo = 1',
-        [username, password]
+        'SELECT id, name, role FROM sellers WHERE name LIKE ? AND password = ? AND activo = 1',
+        [`${username}%`, password]
       );
       if (rows.length === 0) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
       const user = rows[0];
