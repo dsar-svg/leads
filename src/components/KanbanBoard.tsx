@@ -98,6 +98,7 @@ interface KanbanBoardProps {
   setActiveTab?: (tab: 'board' | 'closed' | 'stats' | 'settings') => void;
   onSellersUpdate?: (sellers: any[]) => void;
   sellers: any[];
+  onVendorRankUpdate?: (data: {rank: number, rate: number, tier: string | null} | null) => void;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -109,6 +110,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   setActiveTab: propSetActiveTab,
   onSellersUpdate,
   sellers,
+  onVendorRankUpdate,
 }) => {
   const [internalUserRole, setInternalUserRole] = useState<'ADMIN' | 'VENDEDOR'>(() => {
     if (typeof window !== 'undefined') {
@@ -168,7 +170,19 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   }).sort((a, b) => b.vRev - a.vRev);
 }, [sellers, leads]);
  
-
+  useEffect(() => {
+  if (userRole !== 'VENDEDOR' || !onVendorRankUpdate) return;
+  const sorted = [...sellersPerformance].sort((a, b) => b.vRate - a.vRate);
+  const rank = sorted.findIndex(s => s.vName.trim().toLowerCase() === (selectedVendedor || '').trim().toLowerCase());
+  if (rank < 0) { onVendorRankUpdate(null); return; }
+  const tiers = [
+    { label: 'Oro', minRate: 100 },
+    { label: 'Plata', minRate: 80 },
+    { label: 'Bronce', minRate: 60 },
+  ];
+  const tier = rank < 3 && sorted[rank].vRate >= tiers[rank].minRate ? tiers[rank].label : null;
+  onVendorRankUpdate({ rank, rate: sorted[rank].vRate, tier });
+}, [sellersPerformance, selectedVendedor, userRole, onVendorRankUpdate]);
 
 
 
