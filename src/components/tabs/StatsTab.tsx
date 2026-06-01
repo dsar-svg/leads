@@ -157,10 +157,14 @@ export const StatsTab: React.FC<StatsTabProps> = ({
                     </div>
                     <span className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg"><Clock className="w-5 h-5" /></span>
                   </div>
-                  <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
-                    <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Tiempo Promedio Cierre</span><span className="text-xl font-black text-indigo-700 mt-1 block font-mono">
-                      {localAverageClosureTimeGlobal > 0 ? formatMinutosADiasHorasMin(localAverageClosureTimeGlobal) : '—'}
-                    </span>
+                  
+                <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
+                    <div>
+                      <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Tiempo Promedio Cierre</span>
+                      <span className="text-xl font-black text-indigo-700 mt-1 block font-mono">
+                        {localAverageClosureTimeGlobal > 0 ? formatMinutosADiasHorasMin(localAverageClosureTimeGlobal) : '—'}
+                      </span>
+                    </div>
                     <span className="p-2.5 bg-amber-50 text-amber-600 rounded-lg"><Calendar className="w-5 h-5" /></span>
                   </div>
                 </div>
