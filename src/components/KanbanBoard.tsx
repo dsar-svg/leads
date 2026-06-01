@@ -646,38 +646,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
       {activeTab === 'board' && (
         <div className="space-y-6">
-                    {userRole === 'VENDEDOR' && ((() => {
-            const rankingSorted = [...sellersPerformance].sort((a, b) => b.vRate - a.vRate);
-            const myRank = rankingSorted.findIndex(s => s.vName.trim().toLowerCase() === (selectedVendedor || '').trim().toLowerCase());
-            const myData = myRank >= 0 ? rankingSorted[myRank] : null;
-            if (!myData) return null;
-            const medals = ['🥇', '🥈', '🥉'];
-            const tiers = [
-              { label: 'Oro', minRate: 100, bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-600' },
-              { label: 'Plata', minRate: 80, bg: 'bg-slate-50', border: 'border-slate-300', text: 'text-slate-600' },
-              { label: 'Bronce', minRate: 60, bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-600' },
-            ];
-            const tier = myRank < 3 ? tiers[myRank] : null;
-            const qualifies = tier && myData.vRate >= tier.minRate;
-            return (
-              <div className={`sticky top-2 z-40 rounded-2xl border px-5 py-3 flex items-center gap-4 shadow-md ${tier && qualifies ? `${tier.bg} ${tier.border}` : 'bg-white border-zinc-200'}`}>
-                <span className="text-2xl">{myRank < 3 ? medals[myRank] : '🏅'}</span>
-                <div className="flex-1 min-w-0">
-                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Tu posición en el ranking</span>
-                  <div className="flex items-baseline gap-2 mt-0.5">
-                    <span className="text-lg font-extrabold text-zinc-900">#{myRank + 1}</span>
-                    <span className="text-sm font-bold text-zinc-700 truncate">{myData.vName}</span>
-                    {tier && qualifies && <span className={`text-xs font-bold ${tier.text}`}>{tier.label} · {tier.minRate}%+</span>}
-                    {tier && !qualifies && <span className="text-xs font-bold text-red-400">No alcanza umbral {tier.minRate}%</span>}
-                  </div>
-                </div>
-                <div className="text-right flex-shrink-0">
-                  <span className={`text-2xl font-black ${tier && qualifies ? tier.text : 'text-zinc-600'}`}>{myData.vRate}%</span>
-                  <span className="text-[10px] text-zinc-400 block">efectividad</span>
-                </div>
-              </div>
-            );
-          })())}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
               <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Oportunidades Activas</span><span className="text-xl font-black text-zinc-850 block mt-1">{activeLeadsCount}</span></div>
