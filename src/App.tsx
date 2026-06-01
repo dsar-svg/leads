@@ -18,6 +18,7 @@ export default function App() {
   const [currentTime, setCurrentTime] = useState('');
   const [activeTab, setActiveTab] = useState<'board' | 'closed' | 'stats' | 'settings'>('board');
   const [sellers, setSellers] = useState<any[]>([]);
+  const [vendorRank, setVendorRank] = useState<{rank: number, rate: number, tier: string | null} | null>(null);
 
   const [userRole, setUserRole] = useState<'ADMIN' | 'VENDEDOR'>(() => {
     if (typeof window !== 'undefined') {
@@ -161,6 +162,23 @@ export default function App() {
                   {sellers.length > 0 ? sellers.map(s => <option key={s.id ?? s} value={s.name ?? s}>{s.name ?? s}</option>) : <option>Sin Asignar</option>}
                 </select>
               </div>
+              {userRole === 'VENDEDOR' && vendorRank && (
+  <div className="mt-2 px-3 py-2.5 rounded-xl bg-white/10 border border-white/10">
+    <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest block mb-1">Tu Ranking</span>
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2">
+        <span className="text-lg">{vendorRank.rank === 0 ? '🥇' : vendorRank.rank === 1 ? '🥈' : vendorRank.rank === 2 ? '🥉' : '🏅'}</span>
+        <div>
+          <span className="text-white font-extrabold text-sm">#{vendorRank.rank + 1}</span>
+          {vendorRank.tier && <span className="text-white/60 text-[10px] font-bold ml-1.5">{vendorRank.tier}</span>}
+        </div>
+      </div>
+      <span className={`text-sm font-black ${vendorRank.rate >= 100 ? 'text-amber-300' : vendorRank.rate >= 80 ? 'text-slate-300' : vendorRank.rate >= 60 ? 'text-orange-300' : 'text-white/50'}`}>
+        {vendorRank.rate}%
+      </span>
+    </div>
+  </div>
+)}
             )}
           </div>
         </div>
@@ -178,6 +196,7 @@ export default function App() {
             setActiveTab={setActiveTab}
             onSellersUpdate={setSellers}
             sellers={sellers}
+            onVendorRankUpdate={setVendorRank}
           />
         </main>
 
