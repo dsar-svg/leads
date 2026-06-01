@@ -6,9 +6,9 @@ import {
   DragOverlay,
 } from '@dnd-kit/core';
 import { CheckCircle2, TrendingUp, Users2, Trash2, LayoutGrid, Table } from 'lucide-react';
-import { Column } from '../types';
-import { KanbanColumn } from './KanbanColumn';
-import { LeadCard } from './LeadCard';
+import { Column } from '../../types';
+import { KanbanColumn } from '../KanbanColumn';
+import { LeadCard } from '../LeadCard';
 
 interface BoardTabProps {
   userRole: 'ADMIN' | 'VENDEDOR';
