@@ -164,7 +164,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       const vTotalClosureDays = vClosedWithDates.reduce((sum, l) => sum + Math.round((new Date(l.fechaVenta).getTime() - new Date(l.fechaIngreso).getTime()) / (1000 * 60 * 60 * 24)), 0);
       const vAverageClosureTime = vClosedWithDates.length > 0 ? Math.round(vTotalClosureDays / vClosedWithDates.length) : 0;
       return { vName, total: vLeads.length, vActive, vWon, vLost, vRate, vRev, vAverageClosureTime };
-    }).sort((a, b) => b.vRev - a.vRev);
+    }).sort((a, b) => {
+      if (b.vRate !== a.vRate) return b.vRate - a.vRate;
+      if (b.vWon !== a.vWon) return b.vWon - a.vWon;
+      return b.vRev - a.vRev;
+    });
   }, [sellers, leads]);
 
   useEffect(() => {
