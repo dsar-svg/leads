@@ -632,6 +632,38 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
       {activeTab === 'board' && (
         <div className="space-y-6">
+                    {userRole === 'VENDEDOR' && ((() => {
+            const rankingSorted = [...sellersPerformance].sort((a, b) => b.vRate - a.vRate);
+            const myRank = rankingSorted.findIndex(s => s.vName.trim().toLowerCase() === (selectedVendedor || '').trim().toLowerCase());
+            const myData = myRank >= 0 ? rankingSorted[myRank] : null;
+            if (!myData) return null;
+            const medals = ['🥇', '🥈', '🥉'];
+            const tiers = [
+              { label: 'Oro', minRate: 100, bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-600' },
+              { label: 'Plata', minRate: 80, bg: 'bg-slate-50', border: 'border-slate-300', text: 'text-slate-600' },
+              { label: 'Bronce', minRate: 60, bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-600' },
+            ];
+            const tier = myRank < 3 ? tiers[myRank] : null;
+            const qualifies = tier && myData.vRate >= tier.minRate;
+            return (
+              <div className={`sticky top-2 z-40 rounded-2xl border px-5 py-3 flex items-center gap-4 shadow-md ${tier && qualifies ? `${tier.bg} ${tier.border}` : 'bg-white border-zinc-200'}`}>
+                <span className="text-2xl">{myRank < 3 ? medals[myRank] : '🏅'}</span>
+                <div className="flex-1 min-w-0">
+                  <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Tu posición en el ranking</span>
+                  <div className="flex items-baseline gap-2 mt-0.5">
+                    <span className="text-lg font-extrabold text-zinc-900">#{myRank + 1}</span>
+                    <span className="text-sm font-bold text-zinc-700 truncate">{myData.vName}</span>
+                    {tier && qualifies && <span className={`text-xs font-bold ${tier.text}`}>{tier.label} · {tier.minRate}%+</span>}
+                    {tier && !qualifies && <span className="text-xs font-bold text-red-400">No alcanza umbral {tier.minRate}%</span>}
+                  </div>
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <span className={`text-2xl font-black ${tier && qualifies ? tier.text : 'text-zinc-600'}`}>{myData.vRate}%</span>
+                  <span className="text-[10px] text-zinc-400 block">efectividad</span>
+                </div>
+              </div>
+            );
+          })())}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
               <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Oportunidades Activas</span><span className="text-xl font-black text-zinc-850 block mt-1">{activeLeadsCount}</span></div>
@@ -808,6 +840,40 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
             </p>
           </div>
 
+                    {userRole === 'ADMIN' && (
+            <div className="bg-white p-5 rounded-2xl border border-zinc-200/80 shadow-xs">
+              <h3 className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-5 flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-amber-500" /> Top Vendedores por Efectividad de Cierre
+              </h3>
+              <div className="flex flex-col sm:flex-row gap-4 items-end justify-center">
+                {[...sellersPerformance].sort((a, b) => b.vRate - a.vRate).slice(0, 3).map((seller, idx) => {
+                  const medals = ['🥇', '🥈', '🥉'];
+                  const tiers = [
+                    { label: 'Oro', minRate: 100, bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-600' },
+                    { label: 'Plata', minRate: 80, bg: 'bg-slate-50', border: 'border-slate-200', text: 'text-slate-600' },
+                    { label: 'Bronce', minRate: 60, bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-600' },
+                  ];
+                  const tier = tiers[idx];
+                  const qualifies = seller.vRate >= tier.minRate;
+                  return (
+                    <div key={seller.vName} className={`flex-1 flex flex-col items-center gap-2 p-5 rounded-2xl border ${tier.bg} ${tier.border} transition-opacity ${!qualifies ? 'opacity-40' : ''}`}>
+                      <span className="text-4xl">{medals[idx]}</span>
+                      <span className="text-sm font-extrabold text-zinc-900 text-center truncate w-full text-center">{seller.vName}</span>
+                      <span className={`text-3xl font-black ${tier.text}`}>{seller.vRate}%</span>
+                      <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full border ${tier.border} ${tier.text} ${tier.bg}`}>{tier.label} · {tier.minRate}%+</span>
+                      <span className="text-[11px] text-zinc-500">{seller.vWon} cierres por venta</span>
+                      {!qualifies && <span className="text-[10px] text-red-400 font-bold mt-1">No alcanza el umbral</span>}
+                    </div>
+                  );
+                })}
+                {sellersPerformance.length === 0 && (
+                  <p className="text-zinc-400 text-sm text-center py-8 w-full">Sin datos de vendedores aún.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          
           {/* Bloque lógico de sincronización de datos forzada para el vendedor */}
           {(() => {
             const currentFilter = userRole === 'ADMIN' ? selectedVendorStatsFilter : selectedVendedor;
