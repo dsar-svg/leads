@@ -117,8 +117,8 @@ export const StatsTab: React.FC<StatsTabProps> = ({
             const localConversionPercentage = localTotalClosedCount > 0 ? Math.round((localClosedSalesCount / localTotalClosedCount) * 100) : 0;
 
             const localClosedLeadsWithBothDates = localStatsClosedLeads.filter(l => l.fechaIngreso && l.fechaVenta && !isNaN(new Date(l.fechaIngreso).getTime()) && !isNaN(new Date(l.fechaVenta).getTime()));
-            const localTotalClosureDays = localClosedLeadsWithBothDates.reduce((sum, l) => sum + Math.round((new Date(l.fechaVenta).getTime() - new Date(l.fechaIngreso).getTime()) / (1000 * 60 * 60 * 24)), 0);
-            const localAverageClosureTimeGlobal = localClosedLeadsWithBothDates.length > 0 ? Math.round(localTotalClosureDays / localClosedLeadsWithBothDates.length) : 0;
+            const localTotalClosureMinutes = localClosedLeadsWithBothDates.reduce((sum, l) => sum + Math.round((new Date(l.fechaVenta).getTime() - new Date(l.fechaIngreso).getTime()) / (1000 * 60)), 0);
+            const localAverageClosureTimeGlobal = localClosedLeadsWithBothDates.length > 0 ? Math.round(localTotalClosureMinutes / localClosedLeadsWithBothDates.length) : 0;
 
             const leadsConTiempoContacto = localStatsLeads.filter(l => l.tiempoPrimerContacto !== null && l.tiempoPrimerContacto !== undefined);
             const totalMinutosContacto = leadsConTiempoContacto.reduce((sum, l) => sum + Number(l.tiempoPrimerContacto), 0);
@@ -158,7 +158,9 @@ export const StatsTab: React.FC<StatsTabProps> = ({
                     <span className="p-2.5 bg-indigo-50 text-indigo-600 rounded-lg"><Clock className="w-5 h-5" /></span>
                   </div>
                   <div className="bg-white p-4 rounded-xl border border-zinc-200/60 shadow-xs flex items-center justify-between">
-                    <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Tiempo Promedio Cierre</span><span className="text-xl font-bold text-zinc-850 mt-1 block">{localAverageClosureTimeGlobal > 0 ? localAverageClosureTimeGlobal : '—'} <span className="text-xs font-normal text-zinc-500">días</span></span></div>
+                    <div><span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Tiempo Promedio Cierre</span><span className="text-xl font-black text-indigo-700 mt-1 block font-mono">
+                      {localAverageClosureTimeGlobal > 0 ? formatMinutosADiasHorasMin(localAverageClosureTimeGlobal) : '—'}
+                    </span>
                     <span className="p-2.5 bg-amber-50 text-amber-600 rounded-lg"><Calendar className="w-5 h-5" /></span>
                   </div>
                 </div>
