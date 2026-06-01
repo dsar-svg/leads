@@ -4,13 +4,15 @@
  */
 
 import { KanbanBoard } from './components/KanbanBoard';
+import { LoginScreen } from './components/LoginScreen';
 import { 
   Layers, 
   Clock, 
   BarChart4,
   Lock,
   Archive,
-  Settings
+  Settings,
+  LogOut
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
@@ -20,23 +22,39 @@ export default function App() {
   const [sellers, setSellers] = useState<any[]>([]);
   const [vendorRank, setVendorRank] = useState<{rank: number, rate: number, tier: string | null} | null>(null);
 
-  const [userRole, setUserRole] = useState<'ADMIN' | 'VENDEDOR'>(() => {
+  const [session, setSession] = useState<{ id: number; name: string; role: 'ADMIN' | 'VENDEDOR' } | null>(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('crm_user_role');
-      return (saved as 'ADMIN' | 'VENDEDOR') || 'ADMIN';
+      const saved = localStorage.getItem('crm_session');
+      return saved ? JSON.parse(saved) : null;
     }
-    return 'ADMIN';
+    return null;
   });
 
-  const [selectedVendedor, setSelectedVendedor] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('crm_selected_vendedor') || 'Carlos Pérez';
+  const userRole = session?.role || 'VENDEDOR';
+  const selectedVendedor = session?.name || '';
+
+  const setUserRole = (role: 'ADMIN' | 'VENDEDOR') => {
+    if (session) {
+      const updated = { ...session, role };
+      setSession(updated);
+      localStorage.setItem('crm_session', JSON.stringify(updated));
     }
-    return 'Carlos Pérez';
-  });
+  };
+
+  const setSelectedVendedor = (name: string) => {
+    if (session) {
+      const updated = { ...session, name };
+      setSession(updated);
+      localStorage.setItem('crm_session', JSON.stringify(updated));
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('crm_session');
+    setSession(null);
+  };
 
   useEffect(() => {
-    // Keep local clock running beautifully 
     const updateTime = () => {
       const now = new Date();
       setCurrentTime(now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }));
@@ -50,15 +68,18 @@ export default function App() {
     if (userRole === 'VENDEDOR' && activeTab === 'settings') {
       setActiveTab('board');
     }
-  }, [userRole, activeTab]);  return (
+  }, [userRole, activeTab]);
+
+  if (!session) {
+    return <LoginScreen onLogin={(user) => setSession(user)} />;
+  }
+
+  return (
     <div className="min-h-screen bg-slate-100 flex flex-col md:flex-row font-sans text-zinc-800 antialiased">
       
-      {/* Sidebar Navigation: Left on Desktop, Top on Mobile */}
       <aside className="w-full md:w-64 bg-[#014ACD] text-white flex flex-col justify-between border-b md:border-b-0 md:border-r border-[#01359c] shrink-0 md:h-screen md:sticky md:top-0 z-40">
         
-        {/* Top brand + logo & tabs */}
         <div className="flex flex-col">
-          {/* Header row with Brand identity */}
           <div className="flex items-center justify-between p-4 border-b border-white/10">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-white/20 flex items-center justify-center shadow-xs">
@@ -76,15 +97,12 @@ export default function App() {
                 <p className="text-[10px] text-white/70 -mt-0.5 font-medium">Gestor de Embudos</p>
               </div>
             </div>
-
-            {/* Micro layout for showing online state on mobile header */}
             <div className="md:hidden flex items-center gap-1.5 text-[10px] bg-white/10 px-2 py-1 rounded-full text-white border border-white/5">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
               <span>Activo</span>
             </div>
           </div>
 
-          {/* Navigation links - Scrollable horizontally on mobile, stacked on desktop */}
           <nav className="flex md:flex-col gap-1.5 p-3 overflow-x-auto md:overflow-x-visible pb-3 md:pb-6 scrollbar-none scroll-smooth">
             <button 
               onClick={() => setActiveTab('board')}
@@ -138,55 +156,53 @@ export default function App() {
           </nav>
         </div>
 
-        {/* Bottom utility section (Hidden or rearranged on mobile, tidy on desktop) */}
         <div className="hidden md:flex flex-col gap-3 p-4 border-t border-white/10 bg-white/5">
-          {/* Local Real Time Clock */}
           <div className="flex items-center gap-2 bg-white/10 px-3 py-2 rounded-xl border border-white/5 text-white font-mono text-xs">
             <Clock className="w-4 h-4 text-white/60 flex-shrink-0" />
             <span>{currentTime || '08:00'}</span>
           </div>
 
-          {/* CRM status indicator and role info */}
-          <div className="space-y-4 border-t border-white/10 pt-4">
-            <div className="space-y-1">
-              <span className="text-[10px] font-bold text-white/60 uppercase px-1">Rol de Acceso</span>
-              <div className="flex bg-white/10 rounded-lg p-1">
-                <button onClick={() => {setUserRole('ADMIN'); setActiveTab('board');}} className={`flex-1 py-1.5 text-xs font-semibold rounded-md ${userRole === 'ADMIN' ? 'bg-white text-[#014ACD]' : 'text-white/60'}`}>Admin</button>
-                <button onClick={() => {setUserRole('VENDEDOR'); setActiveTab('board');}} className={`flex-1 py-1.5 text-xs font-semibold rounded-md ${userRole === 'VENDEDOR' ? 'bg-white text-[#014ACD]' : 'text-white/60'}`}>Vendedor</button>
+          <div className="space-y-3 border-t border-white/10 pt-3">
+            {/* Usuario logueado */}
+            <div className="flex items-center gap-2.5 px-3 py-2 bg-white/10 rounded-xl border border-white/10">
+              <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs font-extrabold text-white">
+                {session.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold text-white truncate">{session.name}</p>
+                <p className="text-[10px] text-white/50">{userRole === 'ADMIN' ? 'Administrador' : 'Vendedor'}</p>
               </div>
             </div>
-                       {userRole === 'VENDEDOR' && (
-              <div className="space-y-2">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-white/60 uppercase px-1">Ver Como</span>
-                  <select value={selectedVendedor} onChange={(e) => setSelectedVendedor(e.target.value)} className="w-full bg-white/10 border border-white/20 text-white rounded-lg px-2 py-2 text-xs cursor-pointer">
-                    {sellers.length > 0 ? sellers.map(s => <option key={s.id ?? s} value={s.name ?? s}>{s.name ?? s}</option>) : <option>Sin Asignar</option>}
-                  </select>
-                </div>
-                {vendorRank && (
-                  <div className="px-3 py-2.5 rounded-xl bg-white/10 border border-white/10">
-                    <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest block mb-1">Tu Ranking</span>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg">{vendorRank.rank === 0 ? '🥇' : vendorRank.rank === 1 ? '🥈' : vendorRank.rank === 2 ? '🥉' : '🏅'}</span>
-                        <div>
-                          <span className="text-white font-extrabold text-sm">#{vendorRank.rank + 1}</span>
-                          {vendorRank.tier && <span className="text-white/60 text-[10px] font-bold ml-1.5">{vendorRank.tier}</span>}
-                        </div>
-                      </div>
-                      <span className={`text-sm font-black ${vendorRank.rate >= 100 ? 'text-amber-300' : vendorRank.rate >= 80 ? 'text-slate-300' : vendorRank.rate >= 60 ? 'text-orange-300' : 'text-white/50'}`}>
-                        {vendorRank.rate}%
-                      </span>
+
+            {userRole === 'VENDEDOR' && vendorRank && (
+              <div className="px-3 py-2.5 rounded-xl bg-white/10 border border-white/10">
+                <span className="text-[10px] font-bold text-white/50 uppercase tracking-widest block mb-1">Tu Ranking</span>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{vendorRank.rank === 0 ? '🥇' : vendorRank.rank === 1 ? '🥈' : vendorRank.rank === 2 ? '🥉' : '🏅'}</span>
+                    <div>
+                      <span className="text-white font-extrabold text-sm">#{vendorRank.rank + 1}</span>
+                      {vendorRank.tier && <span className="text-white/60 text-[10px] font-bold ml-1.5">{vendorRank.tier}</span>}
                     </div>
                   </div>
-                )}
+                  <span className={`text-sm font-black ${vendorRank.rate >= 100 ? 'text-amber-300' : vendorRank.rate >= 80 ? 'text-slate-300' : vendorRank.rate >= 60 ? 'text-orange-300' : 'text-white/50'}`}>
+                    {vendorRank.rate}%
+                  </span>
+                </div>
               </div>
             )}
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors text-xs font-bold"
+            >
+              <LogOut className="w-4 h-4" />
+              Cerrar Sesión
+            </button>
           </div>
         </div>
       </aside>
 
-      {/* Main Container Workspace */}
       <div className="flex-1 flex flex-col min-h-screen overflow-y-auto">
         <main className="flex-1 pb-16">
           <KanbanBoard 
@@ -202,7 +218,6 @@ export default function App() {
           />
         </main>
 
-        {/* Footer Banner */}
         <footer className="bg-white border-t border-zinc-200/60 py-4 text-xs text-zinc-400 text-center">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
             <p>© {new Date().getFullYear()} ArtemisCRM. Diseñado para integraciones robustas de Webhook con n8n.</p>
@@ -217,7 +232,6 @@ export default function App() {
           </div>
         </footer>
       </div>
-
     </div>
   );
 }
