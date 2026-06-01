@@ -61,6 +61,7 @@ async function startServer() {
         notas: lead.observaciones_vendedor,
         valorEstimado: Number(lead.monto_cerrado_usd || 0),
         fechaVenta: lead.fecha_venta ? new Date(lead.fecha_venta).toISOString().split('T')[0] : null,
+        fechaVentaISO: lead.fecha_venta ? new Date(lead.fecha_venta).toISOString() : null,
         fechaIngreso: lead.created_at ? new Date(lead.created_at).toISOString() : (lead.fecha_ingreso || null),
         tiempoPrimerContacto: lead.tiempo_primer_contacto_minutos != null ? Number(lead.tiempo_primer_contacto_minutos) : null,
         motivoCierre: lead.motivo_cierre,
@@ -106,6 +107,11 @@ async function startServer() {
           lead.motivoCierre = null;
           lead.fechaVenta = null;
         }
+
+        if (esCierre) {
+        lead.fechaVenta = new Date().toISOString();
+        }
+        
         if (lead.fechaVenta && lead.fechaVenta.includes('T')) {
           lead.fechaVenta = lead.fechaVenta.split('T')[0];
         }
