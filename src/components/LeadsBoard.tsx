@@ -491,16 +491,18 @@ export const LeadsBoard: React.FC<LeadsBoardProps> = ({
     };
     setLeads(prev => prev.map(l => l.id.toString() === leadId.toString() ? updated : l));
     setUpdatingLeadIds(prev => [...prev, leadId.toString()]);
-    try {
-      const res = await fetch(`/api/leads/${leadId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updated),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      showToast(`"${original.nombre}" guardado con éxito.`, 'success');
-      fetchLeads();
-    } catch {
+          try {
+        await fetch(`/api/leads/${leadId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updated),
+        });
+        showToast(`"${original.nombre}" guardado con éxito.`, 'success');
+      } catch {
+        showToast('Error de red: No se pudo conectar al servidor.', 'error');
+      } finally {
+        fetchLeads();
+      } catch {
       showToast('Error: No se pudo guardar en la base de datos.', 'error');
     } finally {
       setUpdatingLeadIds(prev => prev.filter(id => id !== leadId.toString()));
