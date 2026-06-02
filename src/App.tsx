@@ -4,6 +4,7 @@
  */
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { KanbanBoard } from './components/KanbanBoard';
+import { LeadsBoard } from './components/LeadsBoard';
 import { LoginScreen } from './components/LoginScreen';
 import { 
   Layers, 
@@ -214,17 +215,28 @@ export default function App() {
 
       <div className="flex-1 flex flex-col min-h-screen overflow-y-auto">
         <main className="flex-1 pb-16">
-          <KanbanBoard 
-            userRole={userRole}
-            setUserRole={setUserRole}
-            selectedVendedor={selectedVendedor}
-            setSelectedVendedor={setSelectedVendedor}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            onSellersUpdate={setSellers}
-            sellers={sellers}
-            onVendorRankUpdate={setVendorRank}
-          />
+          {activeTab === 'board' ? (
+            <div className="w-full max-w-7xl mx-auto px-4 py-6">
+              <LeadsBoard
+                userRole={userRole}
+                selectedVendedor={selectedVendedor}
+                sellers={sellers}
+                onSellersUpdate={setSellers}
+              />
+            </div>
+          ) : (
+            <KanbanBoard 
+              userRole={userRole}
+              setUserRole={setUserRole}
+              selectedVendedor={selectedVendedor}
+              setSelectedVendedor={setSelectedVendedor}
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              onSellersUpdate={setSellers}
+              sellers={sellers}
+              onVendorRankUpdate={setVendorRank}
+            />
+          )}
         </main>
 
         {showChangePassword && session && (
