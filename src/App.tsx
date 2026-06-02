@@ -2,7 +2,6 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import { LeadsBoard } from './components/LeadsBoard';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { KanbanBoard } from './components/KanbanBoard';
 import { LoginScreen } from './components/LoginScreen';
@@ -57,7 +56,6 @@ export default function App() {
 
   const [showChangePassword, setShowChangePassword] = useState(false);
 
-  
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -111,14 +109,10 @@ export default function App() {
             <button 
               onClick={() => setActiveTab('board')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all cursor-pointer text-xs font-bold whitespace-nowrap w-auto md:w-full ${
-                {activeTab === 'board' && (
-                    <LeadsBoard
-                      userRole={userRole}
-                      selectedVendedor={selectedVendedor}
-                      sellers={sellers}
-                      onSellersUpdate={setSellers}
-                    />
-                  )}
+                activeTab === 'board' 
+                  ? 'text-white bg-white/20 border-white/20 shadow-sm font-extrabold' 
+                  : 'text-white/60 hover:text-white hover:bg-white/10 border-transparent'
+              }`}
             >
               <Layers className="w-4 h-4 text-white" />
               <span>Tablero de Leads</span>
@@ -171,7 +165,6 @@ export default function App() {
           </div>
 
           <div className="space-y-3 border-t border-white/10 pt-3">
-            {/* Usuario logueado */}
             <div className="flex items-center gap-2.5 px-3 py-2 bg-white/10 rounded-xl border border-white/10">
               <div className="w-7 h-7 rounded-full bg-white/20 flex items-center justify-center text-xs font-extrabold text-white">
                 {session.name.charAt(0).toUpperCase()}
@@ -201,12 +194,12 @@ export default function App() {
             )}
             
             <button
-            onClick={() => setShowChangePassword(true)}
-            className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors text-xs font-bold"
-          >
-            <Lock className="w-4 h-4" />
-            Cambiar Contraseña
-          </button>
+              onClick={() => setShowChangePassword(true)}
+              className="flex items-center gap-2 w-full px-3 py-2 rounded-xl text-white/60 hover:text-white hover:bg-white/10 transition-colors text-xs font-bold"
+            >
+              <Lock className="w-4 h-4" />
+              Cambiar Contraseña
+            </button>
 
             <button
               onClick={handleLogout}
@@ -234,10 +227,9 @@ export default function App() {
           />
         </main>
 
-        
         {showChangePassword && session && (
-        <ChangePasswordModal userId={session.id} onClose={() => setShowChangePassword(false)} />
-      )}
+          <ChangePasswordModal userId={session.id} onClose={() => setShowChangePassword(false)} />
+        )}
         
         <footer className="bg-white border-t border-zinc-200/60 py-4 text-xs text-zinc-400 text-center">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
