@@ -134,7 +134,7 @@ export const BoardTab: React.FC<BoardTabProps> = ({
             ))}
           </div>
           <DragOverlay>
-            {activeLead ? <LeadCard lead={activeLead} column={columns.find(c => c.id === activeLead.estatus)!} isDragging /> : null}
+          {activeLead ? <LeadCard lead={activeLead} isUpdating={false} onEdit={() => {}} onDelete={() => {}} isDragging /> : null}
           </DragOverlay>
         </DndContext>
       )}
