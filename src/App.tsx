@@ -2,6 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
+import { StatsBoard } from './components/StatsBoard';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { KanbanBoard } from './components/KanbanBoard';
 import { LeadsBoard } from './components/LeadsBoard';
@@ -216,27 +217,22 @@ export default function App() {
       <div className="flex-1 flex flex-col min-h-screen overflow-y-auto">
         <main className="flex-1 pb-16">
           {activeTab === 'board' ? (
-            <div className="w-full max-w-7xl mx-auto px-4 py-6">
-              <LeadsBoard
-                userRole={userRole}
-                selectedVendedor={selectedVendedor}
-                sellers={sellers}
-                onSellersUpdate={setSellers}
+              <div className="w-full max-w-7xl mx-auto px-4 py-6">
+                <LeadsBoard userRole={userRole} selectedVendedor={selectedVendedor} sellers={sellers} onSellersUpdate={setSellers} />
+              </div>
+            ) : activeTab === 'stats' ? (
+              <div className="w-full max-w-7xl mx-auto px-4 py-6">
+                <StatsBoard userRole={userRole} selectedVendedor={selectedVendedor} />
+              </div>
+            ) : (
+              <KanbanBoard
+                userRole={userRole} setUserRole={setUserRole}
+                selectedVendedor={selectedVendedor} setSelectedVendedor={setSelectedVendedor}
+                activeTab={activeTab} setActiveTab={setActiveTab}
+                onSellersUpdate={setSellers} sellers={sellers}
+                onVendorRankUpdate={setVendorRank}
               />
-            </div>
-          ) : (
-            <KanbanBoard 
-              userRole={userRole}
-              setUserRole={setUserRole}
-              selectedVendedor={selectedVendedor}
-              setSelectedVendedor={setSelectedVendedor}
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              onSellersUpdate={setSellers}
-              sellers={sellers}
-              onVendorRankUpdate={setVendorRank}
-            />
-          )}
+            )}
         </main>
 
         {showChangePassword && session && (
