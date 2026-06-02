@@ -2,6 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
+import { LeadsBoard } from './components/LeadsBoard';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { KanbanBoard } from './components/KanbanBoard';
 import { LoginScreen } from './components/LoginScreen';
@@ -110,10 +111,14 @@ export default function App() {
             <button 
               onClick={() => setActiveTab('board')}
               className={`flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border transition-all cursor-pointer text-xs font-bold whitespace-nowrap w-auto md:w-full ${
-                activeTab === 'board' 
-                  ? 'text-white bg-white/20 border-white/20 shadow-sm font-extrabold' 
-                  : 'text-white/60 hover:text-white hover:bg-white/10 border-transparent'
-              }`}
+                {activeTab === 'board' && (
+                    <LeadsBoard
+                      userRole={userRole}
+                      selectedVendedor={selectedVendedor}
+                      sellers={sellers}
+                      onSellersUpdate={setSellers}
+                    />
+                  )}
             >
               <Layers className="w-4 h-4 text-white" />
               <span>Tablero de Leads</span>
